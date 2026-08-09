@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0a0a">
+<title>Cuatrouno · Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0a0a0a;
+  --surface:#141414;
+  --border:#1e1e1e;
+  --text:#f0f0f0;
+  --muted:#5a5a5a;
+  --soft:#888;
+  --red:#e63329;
+  --red-dim:rgba(230,51,41,.15);
+  --green:#4ade80;
+  --amber:#f5a623;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg)}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.hidden{display:none !important}
+
+/* login */
+#login-screen{
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;gap:24px;
+}
+#login-screen img{width:160px;max-width:60vw}
+.login-card{
+  width:100%;max-width:340px;background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:24px;
+}
+.login-card h1{font-size:18px;font-weight:700;margin-bottom:18px;text-align:center}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);margin-bottom:6px}
+.field input, .field select, .field textarea{
+  width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);
+  border-radius:8px;padding:11px 12px;font-size:14px;font-family:inherit;
+}
+.field input:focus, .field select:focus, .field textarea:focus{outline:none;border-color:var(--red)}
+.field textarea{resize:vertical;min-height:120px;font-family:ui-monospace,monospace;font-size:12px}
+.btn{
+  width:100%;padding:13px;border-radius:10px;border:none;
+  background:var(--red);color:#fff;font-size:14px;font-weight:700;
+  cursor:pointer;font-family:inherit;
+}
+.btn:active{opacity:.8}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.secondary{background:var(--surface);border:1px solid var(--border);color:var(--text)}
+.msg{font-size:13px;margin-top:12px;text-align:center;color:var(--soft)}
+.msg.error{color:var(--red)}
+.msg.ok{color:var(--green)}
+
+/* app shell */
+#app-screen header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:rgba(10,10,10,.95);backdrop-filter:blur(10px);z-index:10;
+}
+#app-screen header img{height:28px}
+#app-screen main{max-width:960px;margin:0 auto;padding:24px 20px 60px}
+.section-title{font-size:20px;font-weight:700;margin-bottom:4px}
+.section-lead{font-size:13px;color:var(--soft);margin-bottom:18px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:20px}
+.row{display:flex;gap:10px}
+.row .field{flex:1}
+
+/* student list */
+.student-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;
+}
+.student-row:last-child{border:none}
+.student-row:hover{opacity:.85}
+.student-name{font-size:14px;font-weight:600}
+.student-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.badge{
+  font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;
+  letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;
+}
+.badge.al_dia{background:rgba(74,222,128,.15);color:var(--green)}
+.badge.pendiente{background:var(--red-dim);color:var(--red)}
+
+/* detail panel */
+#detail-panel{display:none}
+#detail-panel.active{display:block}
+.detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.back-link{font-size:13px;color:var(--soft);cursor:pointer;margin-bottom:16px;display:inline-block}
+.block-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);margin:20px 0 10px}
+.progress-row{
+  display:flex;justify-content:space-between;gap:10px;padding:8px 0;
+  border-bottom:1px solid var(--border);font-size:12px;
+}
+.progress-row:last-child{border:none}
+.progress-row .pdate{color:var(--muted);white-space:nowrap}
+.progress-row .pex{color:var(--soft);flex:1}
+.progress-row .pval{color:var(--text);font-weight:600;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="login-screen">
+  <img src="../shared/logo.png" alt="Cuatrouno">
+  <div class="login-card">
+    <h1>Panel de administración</h1>
+    <form id="login-form">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="login-email" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <input type="password" id="login-password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn" id="login-btn">Ingresar</button>
+      <div class="msg" id="login-msg"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app-screen" class="hidden">
+  <header>
+    <img src="../shared/logo.png" alt="Cuatrouno">
+    <button class="btn secondary" style="width:auto;padding:8px 16px;font-size:12px" id="logout-btn">Salir</button>
+  </header>
+  <main>
+
+    <!-- Crear alumno -->
+    <p class="section-title">Nuevo alumno</p>
+    <p class="section-lead">Crea el acceso del alumno a la app. Después le compartís usuario y contraseña.</p>
+    <div class="card">
+      <form id="create-form">
+        <div class="row">
+          <div class="field">
+            <label>Nombre completo</label>
+            <input type="text" id="cs-fullname" required>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Usuario (login)</label>
+            <input type="text" id="cs-username" required pattern="[a-z0-9-]+" placeholder="ej: juan-ignacio">
+          </div>
+          <div class="field">
+            <label>Slug (interno)</label>
+            <input type="text" id="cs-slug" required pattern="[a-z0-9-]+" placeholder="igual al usuario">
+          </div>
+        </div>
+        <div class="field">
+          <label>Contraseña</label>
+          <input type="text" id="cs-password" required minlength="8" placeholder="mínimo 8 caracteres">
+        </div>
+        <button type="submit" class="btn" id="create-btn">Crear alumno</button>
+        <div class="msg" id="create-msg"></div>
+      </form>
+    </div>
+
+    <!-- Lista de alumnos -->
+    <div id="list-view">
+      <p class="section-title">Alumnos</p>
+      <p class="section-lead">Click en un alumno para ver su detalle, pago, plan y progreso.</p>
+      <div class="card" id="student-list">
+        <div class="msg">Cargando...</div>
+      </div>
+    </div>
+
+    <!-- Detalle de alumno -->
+    <div id="detail-panel">
+      <span class="back-link" id="back-to-list">← Volver a la lista</span>
+      <div class="detail-header">
+        <p class="section-title" id="detail-name">—</p>
+        <span class="badge" id="detail-badge">—</span>
+      </div>
+      <p class="section-lead" id="detail-meta">—</p>
+
+      <p class="block-label">Estado de pago</p>
+      <div class="card">
+        <div class="field">
+          <label>Estado</label>
+          <select id="detail-status">
+            <option value="pendiente">Pendiente</option>
+            <option value="al_dia">Al día</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Nota (opcional)</label>
+          <input type="text" id="detail-note" placeholder="ej: debe cuota de agosto">
+        </div>
+        <button class="btn" id="save-status-btn">Guardar estado de pago</button>
+        <div class="msg" id="status-msg"></div>
+      </div>
+
+      <p class="block-label">Plan (HTML)</p>
+      <div class="card">
+        <div class="field">
+          <label>Pegá acá el HTML completo del plan</label>
+          <textarea id="detail-plan-html" placeholder="&lt;!DOCTYPE html&gt;..."></textarea>
+        </div>
+        <button class="btn" id="save-plan-btn">Guardar plan</button>
+        <div class="msg" id="plan-msg"></div>
+      </div>
+
+      <p class="block-label">Progreso reciente</p>
+      <div class="card" id="detail-progress">
+        <div class="msg">—</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://yqzemrztgyripdgiwxtg.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxemVtcnp0Z3lyaXBkZ2l3eHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwODYxMzAsImV4cCI6MjA5ODY2MjEzMH0.RAb-oaJQRUQC84zekeAiysaYU6BD3Wtynd1QnGAc-fI';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const loginScreen = document.getElementById('login-screen');
+const appScreen = document.getElementById('app-screen');
+const loginForm = document.getElementById('login-form');
+const loginMsg = document.getElementById('login-msg');
+const loginBtn = document.getElementById('login-btn');
+
+let studentsCache = [];
+let currentStudentId = null;
+
+async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(!session){ showLogin(); return; }
+  await tryEnterApp();
+}
+
+function showLogin(msg, isError){
+  loginScreen.classList.remove('hidden');
+  appScreen.classList.add('hidden');
+  if(msg){ loginMsg.textContent = msg; loginMsg.className = 'msg ' + (isError ? 'error' : ''); }
+}
+
+async function tryEnterApp(){
+  const { data: isAdmin, error } = await sb.rpc('is_admin');
+  if(error || !isAdmin){
+    await sb.auth.signOut();
+    showLogin('No autorizado para este panel.', true);
+    return;
+  }
+  loginScreen.classList.add('hidden');
+  appScreen.classList.remove('hidden');
+  loadStudents();
+}
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  loginBtn.disabled = true;
+  loginMsg.textContent = '';
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  loginBtn.disabled = false;
+  if(error){ showLogin('Email o contraseña incorrectos.', true); return; }
+  await tryEnterApp();
+});
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  location.reload();
+});
+
+// ---- Crear alumno ----
+document.getElementById('cs-username').addEventListener('input', (e) => {
+  const slugField = document.getElementById('cs-slug');
+  if(!slugField.dataset.touched) slugField.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,'');
+});
+document.getElementById('cs-slug').addEventListener('input', (e) => { e.target.dataset.touched = '1'; });
+
+document.getElementById('create-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('create-btn');
+  const msg = document.getElementById('create-msg');
+  btn.disabled = true; btn.textContent = 'Creando...'; msg.textContent = ''; msg.className = 'msg';
+  const full_name = document.getElementById('cs-fullname').value.trim();
+  const username = document.getElementById('cs-username').value.trim().toLowerCase();
+  const slug = document.getElementById('cs-slug').value.trim().toLowerCase();
+  const password = document.getElementById('cs-password').value;
+  const { data, error } = await sb.functions.invoke('create-student', { body: { username, password, full_name, slug } });
+  btn.disabled = false; btn.textContent = 'Crear alumno';
+  if(error || data?.error){
+    msg.textContent = data?.error || error.message || 'Error al crear el alumno.';
+    msg.className = 'msg error';
+    return;
+  }
+  msg.textContent = '✓ Alumno creado: ' + username;
+  msg.className = 'msg ok';
+  document.getElementById('create-form').reset();
+  delete document.getElementById('cs-slug').dataset.touched;
+  loadStudents();
+});
+
+// ---- Lista de alumnos ----
+async function loadStudents(){
+  const listEl = document.getElementById('student-list');
+  const { data, error } = await sb.from('students').select('*').order('full_name');
+  if(error){ listEl.innerHTML = '<div class="msg error">Error cargando alumnos.</div>'; return; }
+  studentsCache = data || [];
+  if(studentsCache.length === 0){ listEl.innerHTML = '<div class="msg">Todavía no hay alumnos.</div>'; return; }
+  listEl.innerHTML = studentsCache.map(s => `
+    <div class="student-row" data-id="${s.user_id}">
+      <div>
+        <div class="student-name">${s.full_name}</div>
+        <div class="student-meta">@${s.username} · ${lastLoginText(s.last_login_at)}</div>
+      </div>
+      <span class="badge ${s.payment_status}">${s.payment_status === 'al_dia' ? 'Al día' : 'Pendiente'}</span>
+    </div>
+  `).join('');
+  listEl.querySelectorAll('.student-row').forEach(row => {
+    row.addEventListener('click', () => openStudent(row.dataset.id));
+  });
+}
+
+function lastLoginText(ts){
+  if(!ts) return 'nunca ingresó';
+  const d = new Date(ts);
+  return 'último ingreso ' + d.toLocaleDateString('es-AR') + ' ' + d.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
+}
+
+// ---- Detalle de alumno ----
+async function openStudent(userId){
+  currentStudentId = userId;
+  const s = studentsCache.find(x => x.user_id === userId);
+  if(!s) return;
+  document.getElementById('list-view').classList.add('hidden');
+  document.getElementById('detail-panel').classList.add('active');
+  document.getElementById('detail-name').textContent = s.full_name;
+  document.getElementById('detail-meta').textContent = '@' + s.username + ' · ' + lastLoginText(s.last_login_at);
+  const badge = document.getElementById('detail-badge');
+  badge.textContent = s.payment_status === 'al_dia' ? 'Al día' : 'Pendiente';
+  badge.className = 'badge ' + s.payment_status;
+  document.getElementById('detail-status').value = s.payment_status;
+  document.getElementById('detail-note').value = s.payment_note || '';
+  document.getElementById('status-msg').textContent = '';
+  document.getElementById('plan-msg').textContent = '';
+
+  const { data: planRow } = await sb.from('student_plans').select('html').eq('user_id', userId).maybeSingle();
+  document.getElementById('detail-plan-html').value = planRow?.html || '';
+
+  const progEl = document.getElementById('detail-progress');
+  progEl.innerHTML = '<div class="msg">Cargando...</div>';
+  const { data: logs } = await sb.from('exercise_logs').select('date,exercise,set1_weight,set2_weight,set3_weight').eq('athlete', s.slug).order('date', {ascending:false}).limit(20);
+  if(!logs || logs.length === 0){ progEl.innerHTML = '<div class="msg">Sin registros de progreso todavía.</div>'; }
+  else {
+    progEl.innerHTML = logs.map(l => {
+      const vals = [l.set1_weight, l.set2_weight, l.set3_weight].filter(v => v !== null && v !== undefined);
+      const d = new Date(l.date + 'T00:00:00');
+      return `<div class="progress-row"><span class="pdate">${d.toLocaleDateString('es-AR')}</span><span class="pex">${l.exercise}</span><span class="pval">${vals.join(' / ')}</span></div>`;
+    }).join('');
+  }
+}
+
+document.getElementById('back-to-list').addEventListener('click', () => {
+  document.getElementById('detail-panel').classList.remove('active');
+  document.getElementById('list-view').classList.remove('hidden');
+  currentStudentId = null;
+});
+
+document.getElementById('save-status-btn').addEventListener('click', async () => {
+  if(!currentStudentId) return;
+  const btn = document.getElementById('save-status-btn');
+  const msg = document.getElementById('status-msg');
+  btn.disabled = true;
+  const payment_status = document.getElementById('detail-status').value;
+  const payment_note = document.getElementById('detail-note').value.trim() || null;
+  const { error } = await sb.from('students').update({ payment_status, payment_note }).eq('user_id', currentStudentId);
+  btn.disabled = false;
+  if(error){ msg.textContent = 'Error al guardar.'; msg.className = 'msg error'; return; }
+  msg.textContent = '✓ Guardado'; msg.className = 'msg ok';
+  loadStudents();
+  setTimeout(() => { msg.textContent=''; msg.className='msg'; }, 3000);
+});
+
+document.getElementById('save-plan-btn').addEventListener('click', async () => {
+  if(!currentStudentId) return;
+  const btn = document.getElementById('save-plan-btn');
+  const msg = document.getElementById('plan-msg');
+  btn.disabled = true;
+  const html = document.getElementById('detail-plan-html').value;
+  const { error } = await sb.from('student_plans').upsert({ user_id: currentStudentId, html, updated_at: new Date().toISOString() });
+  btn.disabled = false;
+  if(error){ msg.textContent = 'Error al guardar el plan.'; msg.className = 'msg error'; return; }
+  msg.textContent = '✓ Plan guardado'; msg.className = 'msg ok';
+  setTimeout(() => { msg.textContent=''; msg.className='msg'; }, 3000);
+});
+
+init();
+</script>
+</body>
+</html>
