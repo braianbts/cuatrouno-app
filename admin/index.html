@@ -406,6 +406,9 @@ document.getElementById('save-status-btn').addEventListener('click', async () =>
   btn.disabled = false;
   if(error){ msg.textContent = 'Error al guardar.'; msg.className = 'msg error'; return; }
   msg.textContent = '✓ Guardado'; msg.className = 'msg ok';
+  const badge = document.getElementById('detail-badge');
+  badge.textContent = payment_status === 'al_dia' ? 'Al día' : 'Pendiente';
+  badge.className = 'badge ' + payment_status;
   loadStudents();
   setTimeout(() => { msg.textContent=''; msg.className='msg'; }, 3000);
 });
