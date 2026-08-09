@@ -238,6 +238,10 @@ body{
           <label>Contraseña</label>
           <input type="text" id="cs-password" required minlength="8" placeholder="mínimo 8 caracteres">
         </div>
+        <div class="field">
+          <label>Foto de perfil (opcional)</label>
+          <input type="file" id="cs-photo" accept="image/*">
+        </div>
         <button type="submit" class="btn" id="create-btn">Crear alumno</button>
         <div class="msg" id="create-msg"></div>
       </form>
@@ -258,6 +262,16 @@ body{
         <span class="badge" id="detail-badge">—</span>
       </div>
       <p class="section-lead" id="detail-meta">—</p>
+
+      <p class="block-label">Foto de perfil</p>
+      <div class="card">
+        <div id="detail-photo-preview" style="margin-bottom:12px"></div>
+        <div class="field">
+          <label>Subir / reemplazar foto</label>
+          <input type="file" id="detail-photo-file" accept="image/*">
+        </div>
+        <div class="msg" id="photo-msg"></div>
+      </div>
 
       <p class="block-label">Estado de pago</p>
       <div class="card">
@@ -453,6 +467,7 @@ document.getElementById('create-form').addEventListener('submit', async (e) => {
   const username = document.getElementById('cs-username').value.trim().toLowerCase();
   const slug = document.getElementById('cs-slug').value.trim().toLowerCase();
   const password = document.getElementById('cs-password').value;
+  const photoFile = document.getElementById('cs-photo').files[0];
   const { data, error } = await sb.functions.invoke('create-student', { body: { username, password, full_name, slug } });
   btn.disabled = false; btn.textContent = 'Crear alumno';
   if(error || data?.error){
@@ -462,10 +477,31 @@ document.getElementById('create-form').addEventListener('submit', async (e) => {
   }
   msg.textContent = '✓ Alumno creado: ' + username;
   msg.className = 'msg ok';
+
+  if(photoFile && data?.user_id){
+    msg.textContent += ' — subiendo foto...';
+    const photoUrl = await uploadStudentPhoto(data.user_id, slug, photoFile);
+    if(photoUrl){
+      await sb.from('students').update({ photo_url: photoUrl }).eq('user_id', data.user_id);
+      msg.textContent = '✓ Alumno creado con foto: ' + username;
+    } else {
+      msg.textContent = '✓ Alumno creado (la foto no se pudo subir, se puede cargar después): ' + username;
+    }
+  }
+
   document.getElementById('create-form').reset();
   delete document.getElementById('cs-slug').dataset.touched;
   loadStudents();
 });
+
+async function uploadStudentPhoto(userId, slug, file){
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = slug + '/profile.' + ext;
+  const { error } = await sb.storage.from('student-photos').upload(path, file, { upsert: true });
+  if(error) return null;
+  const { data } = sb.storage.from('student-photos').getPublicUrl(path);
+  return data?.publicUrl || null;
+}
 
 async function loadStudents(){
   const listEl = document.getElementById('student-list');
@@ -508,6 +544,8 @@ async function openStudent(userId){
   document.getElementById('detail-note').value = s.payment_note || '';
   document.getElementById('status-msg').textContent = '';
   document.getElementById('plan-msg').textContent = '';
+  document.getElementById('photo-msg').textContent = '';
+  renderPhotoPreview(s.photo_url);
 
   const { data: planRow } = await sb.from('student_plans').select('html').eq('user_id', userId).maybeSingle();
   document.getElementById('detail-plan-html').value = planRow?.html || '';
@@ -524,6 +562,37 @@ async function openStudent(userId){
     }).join('');
   }
 }
+
+function renderPhotoPreview(photoUrl){
+  const el = document.getElementById('detail-photo-preview');
+  if(photoUrl){
+    el.innerHTML = `
+      <img src="${photoUrl}" alt="Foto" style="width:64px;height:64px;border-radius:50%;object-fit:cover;display:block;margin-bottom:8px;border:1px solid var(--border)">
+      <input type="text" readonly value="${photoUrl}" onclick="this.select()" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--soft);border-radius:6px;padding:6px 8px;font-size:11px;font-family:ui-monospace,monospace">
+    `;
+  } else {
+    el.innerHTML = '<div class="msg">Sin foto todavía.</div>';
+  }
+}
+
+document.getElementById('detail-photo-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file || !currentStudentId) return;
+  const s = studentsCache.find(x => x.user_id === currentStudentId);
+  const msg = document.getElementById('photo-msg');
+  msg.textContent = 'Subiendo...'; msg.className = 'msg';
+  const photoUrl = await uploadStudentPhoto(currentStudentId, s.slug, file);
+  if(!photoUrl){
+    msg.textContent = 'Error al subir la foto.'; msg.className = 'msg error';
+    return;
+  }
+  const { error } = await sb.from('students').update({ photo_url: photoUrl }).eq('user_id', currentStudentId);
+  if(error){ msg.textContent = 'Foto subida, pero no se pudo guardar en la ficha.'; msg.className = 'msg error'; return; }
+  s.photo_url = photoUrl;
+  renderPhotoPreview(photoUrl);
+  msg.textContent = '✓ Foto actualizada'; msg.className = 'msg ok';
+  setTimeout(() => { msg.textContent=''; msg.className='msg'; }, 3000);
+});
 
 document.getElementById('back-to-list').addEventListener('click', () => {
   document.getElementById('detail-panel').classList.remove('active');
