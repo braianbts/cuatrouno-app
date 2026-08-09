@@ -50,6 +50,11 @@ body{
 }
 .field input:focus, .field select:focus, .field textarea:focus{outline:none;border-color:var(--red)}
 .field textarea{resize:vertical;min-height:120px;font-family:ui-monospace,monospace;font-size:12px}
+.field input[type="file"]{padding:8px;font-size:12px;color:var(--soft)}
+.field input[type="file"]::file-selector-button{
+  background:var(--red);color:#fff;border:none;border-radius:6px;
+  padding:6px 12px;font-size:12px;font-weight:700;margin-right:10px;cursor:pointer;
+}
 .btn{
   width:100%;padding:13px;border-radius:10px;border:none;
   background:var(--red);color:#fff;font-size:14px;font-weight:700;
@@ -206,7 +211,11 @@ body{
       <p class="block-label">Plan (HTML)</p>
       <div class="card">
         <div class="field">
-          <label>Pegá acá el HTML completo del plan</label>
+          <label>Cargar archivo del plan (index.html)</label>
+          <input type="file" id="detail-plan-file" accept=".html,text/html">
+        </div>
+        <div class="field">
+          <label>O pegá acá el HTML completo del plan</label>
           <textarea id="detail-plan-html" placeholder="&lt;!DOCTYPE html&gt;..."></textarea>
         </div>
         <button class="btn" id="save-plan-btn">Guardar plan</button>
@@ -333,6 +342,19 @@ function lastLoginText(ts){
   const d = new Date(ts);
   return 'último ingreso ' + d.toLocaleDateString('es-AR') + ' ' + d.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
 }
+
+document.getElementById('detail-plan-file').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    document.getElementById('detail-plan-html').value = reader.result;
+    const msg = document.getElementById('plan-msg');
+    msg.textContent = 'Archivo cargado (' + file.name + '). Revisá y hacé clic en "Guardar plan".';
+    msg.className = 'msg ok';
+  };
+  reader.readAsText(file);
+});
 
 // ---- Detalle de alumno ----
 async function openStudent(userId){
