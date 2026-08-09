@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0a">
+<title>Cuatrouno · Mi Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0a0a0a;
+  --surface:#141414;
+  --border:#1e1e1e;
+  --text:#f0f0f0;
+  --muted:#5a5a5a;
+  --soft:#888;
+  --red:#e63329;
+  --red-dim:rgba(230,51,41,.15);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg)}
+body{
+  color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.hidden{display:none !important}
+
+/* login / blocked shared */
+.center-screen{
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;gap:24px;
+}
+.center-screen img{width:160px;max-width:60vw}
+.card{
+  width:100%;max-width:340px;background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:24px;text-align:center;
+}
+.card h1{font-size:18px;font-weight:700;margin-bottom:18px}
+.field{margin-bottom:14px;text-align:left}
+.field label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);margin-bottom:6px}
+.field input{
+  width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);
+  border-radius:8px;padding:11px 12px;font-size:14px;font-family:inherit;
+}
+.field input:focus{outline:none;border-color:var(--red)}
+.btn{
+  width:100%;padding:13px;border-radius:10px;border:none;
+  background:var(--red);color:#fff;font-size:14px;font-weight:700;
+  cursor:pointer;font-family:inherit;
+}
+.btn:active{opacity:.8}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.secondary{background:var(--surface);border:1px solid var(--border);color:var(--text);margin-top:10px}
+.msg{font-size:13px;margin-top:12px;text-align:center;color:var(--soft)}
+.msg.error{color:var(--red)}
+
+/* blocked screen */
+.blocked-icon{font-size:40px;margin-bottom:6px}
+.blocked-title{font-size:20px;font-weight:700;margin-bottom:10px;color:var(--red)}
+.blocked-text{font-size:14px;color:var(--soft);line-height:1.6;margin-bottom:6px}
+.blocked-note{
+  margin-top:14px;padding:12px 14px;background:var(--red-dim);border-left:3px solid var(--red);
+  border-radius:0 8px 8px 0;font-size:13px;color:var(--text);text-align:left;line-height:1.5;
+}
+
+/* plan screen */
+#plan-screen{position:fixed;inset:0;background:var(--bg)}
+#plan-frame{width:100%;height:100%;border:none;display:block}
+#logout-float{
+  position:fixed;top:10px;right:10px;z-index:1000;
+  background:rgba(20,20,20,.9);border:1px solid var(--border);color:var(--text);
+  font-size:11px;font-weight:700;padding:7px 12px;border-radius:20px;
+  cursor:pointer;backdrop-filter:blur(6px);font-family:inherit;
+}
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="login-screen" class="center-screen">
+  <img src="../shared/logo.png" alt="Cuatrouno">
+  <div class="card">
+    <h1>Ingresá a tu plan</h1>
+    <form id="login-form">
+      <div class="field">
+        <label>Usuario</label>
+        <input type="text" id="login-username" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <input type="password" id="login-password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn" id="login-btn">Ingresar</button>
+      <div class="msg" id="login-msg"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== BLOQUEADO (pago pendiente / sin plan) ===================== -->
+<div id="blocked-screen" class="center-screen hidden">
+  <img src="../shared/logo.png" alt="Cuatrouno">
+  <div class="card">
+    <div class="blocked-icon">🔒</div>
+    <div class="blocked-title" id="blocked-title">Cuota pendiente</div>
+    <p class="blocked-text" id="blocked-text">Tu acceso al plan está pausado. Contactá a tu coach para regularizar tu cuota.</p>
+    <div class="blocked-note hidden" id="blocked-note"></div>
+    <button class="btn secondary" id="logout-blocked-btn">Salir</button>
+  </div>
+</div>
+
+<!-- ===================== PLAN (iframe) ===================== -->
+<div id="plan-screen" class="hidden">
+  <button id="logout-float">Salir</button>
+  <iframe id="plan-frame"
+    sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+    allow="camera"></iframe>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://yqzemrztgyripdgiwxtg.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxemVtcnp0Z3lyaXBkZ2l3eHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwODYxMzAsImV4cCI6MjA5ODY2MjEzMH0.RAb-oaJQRUQC84zekeAiysaYU6BD3Wtynd1QnGAc-fI';
+const EMAIL_DOMAIN = '@cuatrouno.club';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const loginScreen = document.getElementById('login-screen');
+const blockedScreen = document.getElementById('blocked-screen');
+const planScreen = document.getElementById('plan-screen');
+const loginForm = document.getElementById('login-form');
+const loginMsg = document.getElementById('login-msg');
+const loginBtn = document.getElementById('login-btn');
+
+function showOnly(el){
+  [loginScreen, blockedScreen, planScreen].forEach(s => s.classList.add('hidden'));
+  el.classList.remove('hidden');
+}
+
+async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(!session){ showOnly(loginScreen); return; }
+  await enterApp();
+}
+
+async function enterApp(){
+  try{ await sb.rpc('touch_last_login'); }catch(e){}
+  const { data: { session } } = await sb.auth.getSession();
+  if(!session){ showOnly(loginScreen); return; }
+
+  const { data: student, error } = await sb.from('students')
+    .select('slug,full_name,payment_status,payment_note')
+    .eq('user_id', session.user.id)
+    .maybeSingle();
+
+  if(error || !student){
+    await sb.auth.signOut();
+    showOnly(loginScreen);
+    loginMsg.textContent = 'No se encontró tu cuenta.';
+    loginMsg.className = 'msg error';
+    return;
+  }
+
+  if(student.payment_status !== 'al_dia'){
+    document.getElementById('blocked-title').textContent = 'Cuota pendiente';
+    document.getElementById('blocked-text').textContent = 'Tu acceso al plan está pausado. Contactá a tu coach para regularizar tu cuota.';
+    const noteEl = document.getElementById('blocked-note');
+    if(student.payment_note){
+      noteEl.textContent = student.payment_note;
+      noteEl.classList.remove('hidden');
+    } else {
+      noteEl.classList.add('hidden');
+    }
+    showOnly(blockedScreen);
+    return;
+  }
+
+  const { data: plan } = await sb.from('student_plans')
+    .select('html')
+    .eq('user_id', session.user.id)
+    .maybeSingle();
+
+  if(!plan || !plan.html){
+    document.getElementById('blocked-title').textContent = 'Plan no disponible';
+    document.getElementById('blocked-text').textContent = 'Tu plan todavía no está cargado. Contactá a tu coach.';
+    document.getElementById('blocked-note').classList.add('hidden');
+    showOnly(blockedScreen);
+    return;
+  }
+
+  const iframe = document.getElementById('plan-frame');
+  iframe.addEventListener('load', () => {
+    iframe.contentWindow.postMessage({
+      type: 'cuatrouno:session',
+      access_token: session.access_token,
+      refresh_token: session.refresh_token
+    }, '*');
+  }, { once: true });
+  iframe.srcdoc = plan.html;
+  showOnly(planScreen);
+}
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  loginBtn.disabled = true;
+  loginMsg.textContent = '';
+  const username = document.getElementById('login-username').value.trim().toLowerCase();
+  const password = document.getElementById('login-password').value;
+  const email = username + EMAIL_DOMAIN;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  loginBtn.disabled = false;
+  if(error){
+    loginMsg.textContent = 'Usuario o contraseña incorrectos.';
+    loginMsg.className = 'msg error';
+    return;
+  }
+  await enterApp();
+});
+
+document.getElementById('logout-blocked-btn').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  location.reload();
+});
+document.getElementById('logout-float').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  location.reload();
+});
+
+init();
+</script>
+</body>
+</html>
