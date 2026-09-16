@@ -1,3 +1,6 @@
 node_modules/
 .DS_Store
 Thumbs.db
+
+# borradores de planes con datos personales/de pago — no van al repo público
+/plans
