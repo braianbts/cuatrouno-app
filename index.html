@@ -113,6 +113,20 @@ body{
   background:var(--grad-ember);color:#fff;border:none;border-radius:var(--radius-pill);
   padding:7px 14px;font-size:12px;font-weight:800;margin-right:10px;cursor:pointer;
 }
+.remember-row{
+  display:flex;align-items:center;gap:9px;margin:-2px 0 16px;text-align:left;
+  font-size:12.5px;color:var(--smoke);cursor:pointer;user-select:none;
+}
+.remember-row input[type="checkbox"]{
+  appearance:none;width:18px;height:18px;flex:none;border-radius:6px;
+  border:1px solid var(--line-strong);background:rgba(0,0,0,.3);cursor:pointer;
+  display:grid;place-content:center;
+}
+.remember-row input[type="checkbox"]::after{
+  content:'';width:10px;height:10px;border-radius:3px;background:var(--grad-ember);
+  transform:scale(0);transition:transform .12s ease;
+}
+.remember-row input[type="checkbox"]:checked::after{transform:scale(1)}
 .user-input-group{
   display:flex;align-items:stretch;
   background:rgba(0,0,0,.3);border:1px solid var(--line-strong);border-radius:14px;
@@ -261,6 +275,10 @@ body{
         <label>Contraseña</label>
         <input type="password" id="login-password" autocomplete="current-password" required>
       </div>
+      <label class="remember-row">
+        <input type="checkbox" id="remember-me" checked>
+        <span>Mantener la sesión iniciada</span>
+      </label>
       <button type="submit" class="btn" id="login-btn">Ingresar</button>
       <div class="msg" id="login-msg"></div>
     </form>
@@ -417,7 +435,19 @@ body{
 const SUPABASE_URL = 'https://yqzemrztgyripdgiwxtg.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxemVtcnp0Z3lyaXBkZ2l3eHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwODYxMzAsImV4cCI6MjA5ODY2MjEzMH0.RAb-oaJQRUQC84zekeAiysaYU6BD3Wtynd1QnGAc-fI';
 const EMAIL_DOMAIN = '@cuatrouno.club';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const REMEMBER_KEY = 'cuatrouno_remember';
+function getRemember(){ return localStorage.getItem(REMEMBER_KEY) !== '0'; }
+function setRemember(v){ localStorage.setItem(REMEMBER_KEY, v ? '1' : '0'); }
+const hybridStorage = {
+  getItem: (key) => (getRemember() ? window.localStorage : window.sessionStorage).getItem(key),
+  setItem: (key, value) => (getRemember() ? window.localStorage : window.sessionStorage).setItem(key, value),
+  removeItem: (key) => { window.localStorage.removeItem(key); window.sessionStorage.removeItem(key); }
+};
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { storage: hybridStorage, persistSession: true, autoRefreshToken: true }
+});
 
 const loginScreen = document.getElementById('login-screen');
 const blockedScreen = document.getElementById('blocked-screen');
@@ -482,6 +512,7 @@ loginForm.addEventListener('submit', async (e) => {
     email = username + EMAIL_DOMAIN;
   }
   const password = document.getElementById('login-password').value;
+  setRemember(document.getElementById('remember-me').checked);
   const { error } = await sb.auth.signInWithPassword({ email, password });
   loginBtn.disabled = false;
   if(error){
