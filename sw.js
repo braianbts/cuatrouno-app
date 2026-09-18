@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cuatrouno-v1';
+const CACHE_NAME = 'cuatrouno-v2';
 const CORE_ASSETS = [
   '/',
   '/manifest.json',
@@ -22,12 +22,18 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Red primero: siempre la versión más nueva; caché solo si no hay conexión.
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).catch(() => cached);
-    })
+    fetch(event.request)
+      .then((response) => {
+        if (response && response.ok && new URL(event.request.url).origin === self.location.origin) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
