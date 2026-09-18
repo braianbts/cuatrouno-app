@@ -309,8 +309,10 @@ body{
       <span>Hablar con Braian</span>
     </a>
     <div class="blocked-btns" style="margin-top:10px">
+      <button class="btn secondary" id="refresh-blocked-btn">Ya pagué, actualizar</button>
       <button class="btn secondary" id="logout-blocked-btn">Salir</button>
     </div>
+    <div class="msg" id="blocked-msg"></div>
   </div>
   <img src="shared/logo.png" alt="Cuatrouno">
 </div>
@@ -544,6 +546,19 @@ async function logout(){
   location.reload();
 }
 document.getElementById('logout-blocked-btn').addEventListener('click', logout);
+document.getElementById('refresh-blocked-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('refresh-blocked-btn');
+  const msg = document.getElementById('blocked-msg');
+  btn.disabled = true;
+  btn.textContent = 'Verificando…';
+  msg.textContent = '';
+  await enterStudentFlow();
+  btn.disabled = false;
+  btn.textContent = 'Ya pagué, actualizar';
+  if(!blockedScreen.classList.contains('hidden') && document.getElementById('blocked-title').textContent === 'Cuota pendiente'){
+    msg.textContent = 'Todavía figura pendiente. Escribile a Braian para que te habilite.';
+  }
+});
 document.getElementById('logout-float').addEventListener('click', logout);
 document.getElementById('logout-admin-btn').addEventListener('click', logout);
 
