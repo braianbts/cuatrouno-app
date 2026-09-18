@@ -95,12 +95,22 @@ body{
 
 /* ---- glass login (auth screens) ---- */
 .center-screen{
-  background:
-    linear-gradient(rgba(8,2,2,.22), rgba(8,2,2,.5)),
-    url('shared/login-bg.webp') center/cover no-repeat;
+  background-color:#1a0303;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='.3 .6 .1 0 0 .3 .6 .1 0 0 .3 .6 .1 0 0 0 0 0 0 .95'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, transparent 42%, rgba(20,2,3,.7) 78%, #120203 100%),
+    radial-gradient(ellipse 48% 62% at 0% 78%, rgba(18,2,3,.9) 0%, rgba(18,2,3,.5) 50%, transparent 80%),
+    radial-gradient(ellipse 62% 18% at 66% 61%, rgba(255,205,205,.9) 0%, rgba(255,115,115,.45) 50%, transparent 80%),
+    radial-gradient(ellipse 30% 22% at 48% 46%, rgba(255,215,215,.85) 0%, rgba(255,140,140,.4) 55%, transparent 85%),
+    radial-gradient(ellipse 32% 42% at 34% 20%, #fff4f4 0%, rgba(255,180,180,.85) 42%, transparent 85%),
+    radial-gradient(ellipse 42% 24% at 82% 29%, #a8101a 0%, rgba(168,16,26,.9) 55%, transparent 92%),
+    linear-gradient(120deg, #560a0e 0%, #c5252b 46%, #d63a3f 100%);
+  background-blend-mode:overlay, normal, normal, normal, normal, normal, normal, normal;
+  background-size:320px 320px, cover, cover, cover, cover, cover, cover, cover;
+  background-repeat:repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
 }
 #login-screen .login-card, #blocked-screen .login-card{
-  background:rgba(255,255,255,.07);
+  background:rgba(28,4,6,.24);
   backdrop-filter:blur(30px) saturate(150%);-webkit-backdrop-filter:blur(30px) saturate(150%);
   border:1px solid rgba(255,255,255,.3);border-radius:30px;padding:36px 26px 30px;
   box-shadow:0 24px 70px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.25);
