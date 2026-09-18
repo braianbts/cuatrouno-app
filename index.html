@@ -77,9 +77,11 @@ body{
 
 /* ---- auth screens (login / blocked) ---- */
 .center-screen{
-  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:24px;gap:14px;position:relative;z-index:1;
+  position:fixed;inset:0;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;gap:14px;z-index:1;
 }
+body:has(.center-screen:not(.hidden)){overflow:hidden;overscroll-behavior:none}
 .center-screen img{width:140px;max-width:55vw}
 .login-card{
   width:100%;max-width:360px;position:relative;overflow:hidden;text-align:center;
