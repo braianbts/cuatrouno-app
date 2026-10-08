@@ -668,7 +668,7 @@ async function enterStudentFlow(){
   if(!session){ showOnly(loginScreen); return; }
 
   const { data: student, error } = await sb.from('students')
-    .select('slug,full_name,payment_status,payment_note')
+    .select('slug,full_name,payment_status,payment_note,photo_url')
     .eq('user_id', session.user.id)
     .maybeSingle();
 
@@ -704,6 +704,15 @@ async function enterStudentFlow(){
 
   const iframe = document.getElementById('plan-frame');
   iframe.addEventListener('load', () => {
+    // La foto sale de la ficha (la que se sube desde el admin), no de la URL escrita en el HTML del plan.
+    if(student.photo_url){
+      try{
+        iframe.contentDocument.querySelectorAll('img.s-avatar').forEach(img => {
+          img.onerror = null;
+          img.src = student.photo_url;
+        });
+      }catch(e){}
+    }
     iframe.contentWindow.postMessage({
       type: 'cuatrouno:session',
       access_token: session.access_token,
@@ -763,7 +772,8 @@ async function uploadStudentPhoto(userId, slug, file){
   const { error } = await sb.storage.from('student-photos').upload(path, file, { upsert: true });
   if(error) return null;
   const { data } = sb.storage.from('student-photos').getPublicUrl(path);
-  return data?.publicUrl || null;
+  // ?v= evita que el CDN/navegador sigan mostrando la foto anterior (misma ruta, upsert).
+  return data?.publicUrl ? data.publicUrl + '?v=' + Date.now() : null;
 }
 
 // ================= TABS (Alumnos / Formularios) =================
