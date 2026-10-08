@@ -466,6 +466,24 @@ body:has(.center-screen:not(.hidden)){overflow:hidden;overscroll-behavior:none}
         <div class="msg" id="photo-msg"></div>
       </div>
 
+      <p class="block-label">Datos de acceso</p>
+      <div class="card">
+        <div class="field">
+          <label>Nombre completo</label>
+          <input type="text" id="detail-fullname">
+        </div>
+        <div class="field">
+          <label>Usuario (login)</label>
+          <input type="text" id="detail-username" pattern="[a-z0-9-]+" placeholder="ej: juan-ignacio">
+        </div>
+        <div class="field">
+          <label>Nueva contraseña</label>
+          <input type="text" id="detail-password" minlength="8" placeholder="dejar vacío para no cambiarla">
+        </div>
+        <button class="btn" id="save-access-btn">Guardar datos de acceso</button>
+        <div class="msg" id="access-msg"></div>
+      </div>
+
       <p class="block-label">Estado de pago</p>
       <div class="card">
         <div class="field">
@@ -834,6 +852,10 @@ async function openStudent(userId){
   badge.className = 'badge ' + s.payment_status;
   document.getElementById('detail-status').value = s.payment_status;
   document.getElementById('detail-note').value = s.payment_note || '';
+  document.getElementById('detail-fullname').value = s.full_name || '';
+  document.getElementById('detail-username').value = s.username || '';
+  document.getElementById('detail-password').value = '';
+  document.getElementById('access-msg').textContent = '';
   document.getElementById('status-msg').textContent = '';
   document.getElementById('plan-msg').textContent = '';
   document.getElementById('photo-msg').textContent = '';
@@ -890,6 +912,47 @@ document.getElementById('back-to-list').addEventListener('click', () => {
   document.getElementById('detail-panel').classList.remove('active');
   document.getElementById('list-view').classList.remove('hidden');
   currentStudentId = null;
+});
+
+document.getElementById('save-access-btn').addEventListener('click', async () => {
+  if(!currentStudentId) return;
+  const s = studentsCache.find(x => x.user_id === currentStudentId);
+  const btn = document.getElementById('save-access-btn');
+  const msg = document.getElementById('access-msg');
+  const full_name = document.getElementById('detail-fullname').value.trim();
+  const username = document.getElementById('detail-username').value.trim().toLowerCase();
+  const password = document.getElementById('detail-password').value;
+
+  const body = { user_id: currentStudentId };
+  if(full_name && full_name !== s.full_name) body.full_name = full_name;
+  if(username && username !== s.username) body.username = username;
+  if(password) body.password = password;
+
+  msg.className = 'msg error';
+  if(body.username && !/^[a-z0-9-]+$/.test(body.username)){ msg.textContent = 'Usuario inválido: solo minúsculas, números y guiones.'; return; }
+  if(body.password && body.password.length < 8){ msg.textContent = 'La contraseña debe tener al menos 8 caracteres.'; return; }
+  if(Object.keys(body).length === 1){ msg.textContent = 'No hay cambios para guardar.'; msg.className = 'msg'; return; }
+
+  btn.disabled = true; btn.textContent = 'Guardando...'; msg.textContent = '';
+  const { data, error } = await sb.functions.invoke('update-student', { body });
+  btn.disabled = false; btn.textContent = 'Guardar datos de acceso';
+  if(error || data?.error){
+    let detail = data?.error;
+    if(!detail && error?.context?.json){ try{ detail = (await error.context.json()).error; }catch(e){} }
+    msg.textContent = detail || error?.message || 'Error al guardar.';
+    msg.className = 'msg error';
+    return;
+  }
+
+  if(body.full_name) s.full_name = body.full_name;
+  if(body.username) s.username = body.username;
+  document.getElementById('detail-name').textContent = s.full_name;
+  document.getElementById('detail-meta').textContent = '@' + s.username + ' · ' + lastLoginText(s.last_login_at);
+  document.getElementById('detail-password').value = '';
+  const changed = [body.full_name && 'nombre', body.username && 'usuario', body.password && 'contraseña'].filter(Boolean);
+  msg.textContent = '✓ Actualizado: ' + changed.join(', ');
+  msg.className = 'msg ok';
+  loadStudents();
 });
 
 document.getElementById('save-status-btn').addEventListener('click', async () => {
