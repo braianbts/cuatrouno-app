@@ -1443,7 +1443,7 @@ function updateTrainFab(){
   } else {
     const mins = Math.round((new Date(ts.finished_at) - new Date(ts.started_at)) / 60000);
     pill.className = 'train-pill done';
-    pill.innerHTML = `<span class="tp-icon">✓</span><span class="tp-text">Entrenamiento de hoy listo<small>${mins} min · ¡bien ahí!</small></span>`;
+    pill.innerHTML = `<span class="tp-icon">✓</span><span class="tp-text">Entrenamiento de hoy listo<small>Duración: ${mins} min</small></span>`;
     pill.dataset.action = '';
   }
 }
