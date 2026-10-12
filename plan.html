@@ -526,27 +526,25 @@ table.t td:first-child{color:var(--ink);font-weight:600;padding-right:16px;width
 .heat-legend .scale{display:flex;align-items:center;gap:3px}
 .heat-legend .scale i{width:11px;height:11px;border-radius:3px;display:block}
 
-/* botón glass "Empezar entrenamiento" (solo en Rutina) */
-.train-fab{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 96px);z-index:60;display:none;justify-content:center;pointer-events:none;padding:0 16px}
-body[data-tab="dn-rutina"] .train-fab{display:flex}
-body[data-tab="dn-rutina"] .wa-fab{display:none}
-.train-pill{pointer-events:auto;display:flex;align-items:center;gap:10px;max-width:100%;
-  padding:8px 8px 8px 18px;border-radius:999px;border:1px solid rgba(255,255,255,.75);
-  background:rgba(255,255,255,.42);backdrop-filter:blur(18px) saturate(170%);-webkit-backdrop-filter:blur(18px) saturate(170%);
-  box-shadow:0 14px 34px rgba(23,18,15,.18), inset 0 1px 0 rgba(255,255,255,.8);
-  color:var(--ink);font-family:inherit;font-size:14px;font-weight:800;letter-spacing:-.005em;cursor:pointer;
-  transition:transform .15s, background .25s}
-.train-pill:active{transform:scale(.97)}
-.train-pill .tp-icon{width:34px;height:34px;border-radius:50%;background:var(--grad-red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 6px 16px rgba(200,30,30,.35);flex-shrink:0}
-.train-pill .tp-text{display:flex;flex-direction:column;line-height:1.15;text-align:left}
-.train-pill .tp-text small{font-size:10.5px;font-weight:700;color:var(--muted)}
-.train-pill .tp-live{width:9px;height:9px;border-radius:50%;background:var(--red);position:relative;flex-shrink:0}
-.train-pill .tp-live::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--red-bright);animation:wkPulse 1.8s ease-out infinite}
-.train-pill .tp-stop{padding:9px 14px;border-radius:999px;background:var(--ink);color:#fff;font-size:12px;font-weight:800;flex-shrink:0}
-.train-pill.done{cursor:default;padding-right:18px}
-.train-pill.done .tp-icon{background:var(--good);box-shadow:0 6px 16px rgba(31,157,85,.3)}
-.train-pill[disabled]{opacity:.7}
-#dn-rutina{padding-bottom:84px}
+/* Rutina bloqueada hasta tocar "Empezar entrenamiento" (registra la asistencia del día) */
+body.rutina-locked #dn-rutina .rut-body{filter:blur(9px);opacity:.55;pointer-events:none;user-select:none;-webkit-user-select:none;transition:filter .35s, opacity .35s}
+#dn-rutina .rut-body{transition:filter .35s, opacity .35s}
+.rut-gate{display:none;position:sticky;top:calc(50vh - 110px);height:0;z-index:20}
+body.rutina-locked .rut-gate{display:block}
+.rut-gate-card{margin:24px auto 0;max-width:320px;padding:22px 20px 20px;border-radius:26px;text-align:center;
+  background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.8);
+  backdrop-filter:blur(20px) saturate(170%);-webkit-backdrop-filter:blur(20px) saturate(170%);
+  box-shadow:0 18px 44px rgba(23,18,15,.18), inset 0 1px 0 rgba(255,255,255,.85)}
+.rut-gate-title{font-size:18px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
+.rut-gate-sub{font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:16px}
+.rut-gate-btn{display:inline-flex;align-items:center;gap:10px;padding:8px 22px 8px 8px;border-radius:999px;border:none;cursor:pointer;
+  background:var(--grad-red);color:#fff;font-family:inherit;font-size:15px;font-weight:800;box-shadow:0 12px 26px rgba(200,30,30,.35);transition:transform .15s}
+.rut-gate-btn:active{transform:scale(.97)}
+.rut-gate-btn:disabled{opacity:.7}
+.rut-gate-btn .ic{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:13px}
+.rut-gate-msg{font-size:11.5px;color:var(--red);margin-top:10px;min-height:14px;font-weight:700}
+.rut-done{display:none;align-items:center;gap:8px;margin:0 0 14px;padding:9px 14px;border-radius:14px;background:var(--good-dim);color:var(--good);font-size:12.5px;font-weight:800}
+body.rutina-open .rut-done{display:flex}
 </style>
 <style id="custom-css"></style>
 </head>
@@ -554,8 +552,6 @@ body[data-tab="dn-rutina"] .wa-fab{display:none}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 
 <div id="app"><div class="plan-empty">Cargando tu plan…</div></div>
-
-<div class="train-fab" id="train-fab"><button class="train-pill" id="train-pill" type="button"></button></div>
 
 <!-- ===================== FRUIT SHEET ===================== -->
 <div class="fruit-overlay" id="fruit-overlay"></div>
@@ -832,11 +828,18 @@ function renderRutina(){
   const S = PLAN.sections || {};
   const head = sectionHead(S.rutina);
   const body = renderBlocks(S.rutina?.blocks);
-  if(!tempWeekVisible()) return head + body;
+  const gate = `<div class="rut-gate"><div class="rut-gate-card">
+      <div class="rut-gate-title">¿Listo para entrenar?</div>
+      <div class="rut-gate-sub">Tocá para ver tu rutina de hoy. El día queda registrado en tu calendario de asistencia.</div>
+      <button class="rut-gate-btn" type="button" data-start-workout><span class="ic">▶</span>Empezar entrenamiento</button>
+      <div class="rut-gate-msg"></div>
+    </div></div>
+    <div class="rut-done">✓ Asistencia de hoy registrada</div>`;
+  if(!tempWeekVisible()) return head + gate + `<div class="rut-body">${body}</div>`;
   const tw = PLAN.tempWeek;
   const today = isoToday();
   const on = today >= tw.start && today <= tw.end;
-  return head + renderTempWeek() + `<div id="rutina-normal"${on ? ' hidden' : ''}>${body}</div>`;
+  return head + gate + `<div class="rut-body">${renderTempWeek()}<div id="rutina-normal"${on ? ' hidden' : ''}>${body}</div></div>`;
 }
 
 function renderEx(ex){
@@ -1011,7 +1014,7 @@ function render(){
   applyPaymentReminder();
   restoreVariants();
   if(!rendered) document.body.dataset.tab = 'dn-resumen';
-  updateTrainFab();
+  updateTrainLock();
   scrollHeatToEnd();
   rendered = true;
 }
@@ -1116,6 +1119,9 @@ document.addEventListener('click', async (e) => {
 
   const attNav = t.closest('[data-att-nav]');
   if(attNav){ attMonthOffset += Number(attNav.dataset.attNav); refreshAttendance(); return; }
+  const startBtn = t.closest('[data-start-workout]');
+  if(startBtn){ startWorkout(startBtn); return; }
+
   const attViewBtn = t.closest('[data-att-view]');
   if(attViewBtn){ attView = attViewBtn.dataset.attView; refreshAttendance(); return; }
 
@@ -1276,19 +1282,25 @@ let attMonthOffset = 0;     // 0 = mes actual, -1 = anterior…
 let attView = 'year';       // 'year' (mapa de calor) | 'month' (calendario)
 let heatYear = new Date().getFullYear();
 let DAY_SETS = {};          // 'AAAA-MM-DD' -> series cargadas ese día
-let trainTimer = null;
+let sessionsState = PREVIEW ? 'ready' : 'loading';   // 'loading' | 'ready' | 'error'
+// Si en unos segundos no se pudo consultar la asistencia, la rutina se abre igual (nunca dejar al alumno trabado).
+setTimeout(() => { if(sessionsState === 'loading'){ sessionsState = 'error'; updateTrainLock(); } }, 8000);
 const MONTH_NAMES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
 async function loadSessions(){
   if(PREVIEW || !USER_ID) return;
-  const [ses, logs] = await Promise.all([
+  let ses, logs;
+  try{
+  [ses, logs] = await Promise.all([
     sb.from('workout_sessions').select('id,date,started_at,finished_at').eq('user_id', USER_ID)
       .order('date', { ascending: false }).limit(800),
     // Series cargadas en Progreso: dan la intensidad del mapa de calor (y los días entrenados de antes del botón).
     sb.from('exercise_logs').select('date,set1_weight,set2_weight,set3_weight').eq('athlete', athlete())
       .order('date', { ascending: false }).limit(5000),
   ]);
+  }catch(e){ sessionsState = 'error'; updateTrainLock(); return; }
   if(!ses.error) SESSIONS = ses.data || [];
+  sessionsState = ses.error ? 'error' : 'ready';
   if(!logs.error){
     DAY_SETS = {};
     (logs.data || []).forEach(l => {
@@ -1297,7 +1309,7 @@ async function loadSessions(){
     });
   }
   refreshAttendance();
-  updateTrainFab();
+  updateTrainLock();
 }
 const todaySession = () => SESSIONS.find(s => s.date === isoToday());
 
@@ -1418,65 +1430,39 @@ function renderMonth(){
     <div class="att-foot">${PREVIEW ? 'Vista previa: el alumno ve acá sus días entrenados.' : 'Cada punto rojo es un día que entrenaste.'}</div>`;
 }
 
-function fmtElapsed(ms){
-  const t = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
-  return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0');
+// Rutina bloqueada hasta que el alumno toca "Empezar entrenamiento" ese día.
+// Sin cronómetro ni "terminar": tocar el botón alcanza para registrar la asistencia.
+// Si no se pudo consultar la asistencia (sin conexión, tabla faltante), la rutina queda abierta.
+function updateTrainLock(){
+  const locked = sessionsState !== 'error' && !todaySession();
+  document.body.classList.toggle('rutina-locked', locked);
+  document.body.classList.toggle('rutina-open', !locked && sessionsState === 'ready' && !!todaySession());
+  document.querySelectorAll('[data-start-workout]').forEach(b => {
+    b.disabled = sessionsState === 'loading';
+    b.lastChild.textContent = sessionsState === 'loading' ? 'Cargando…' : 'Empezar entrenamiento';
+  });
 }
 
-function updateTrainFab(){
-  const pill = document.getElementById('train-pill');
-  if(!pill) return;
-  clearInterval(trainTimer);
-  const ts = todaySession();
-  pill.className = 'train-pill';
-  pill.disabled = false;
-  if(!ts){
-    pill.innerHTML = '<span class="tp-icon">▶</span><span class="tp-text">Empezar entrenamiento<small>Suma el día a tu calendario</small></span>';
-    pill.dataset.action = 'start';
-  } else if(!ts.finished_at){
-    const tick = () => { const el = pill.querySelector('.tp-time'); if(el) el.textContent = fmtElapsed(Date.now() - new Date(ts.started_at).getTime()); };
-    pill.innerHTML = '<span class="tp-live"></span><span class="tp-text">Entrenando <span class="tp-time"></span><small>Día sumado al calendario</small></span><span class="tp-stop">Terminar</span>';
-    pill.dataset.action = 'finish';
-    tick();
-    trainTimer = setInterval(tick, 1000);
-  } else {
-    const mins = Math.round((new Date(ts.finished_at) - new Date(ts.started_at)) / 60000);
-    pill.className = 'train-pill done';
-    pill.innerHTML = `<span class="tp-icon">✓</span><span class="tp-text">Entrenamiento de hoy listo<small>Duración: ${mins} min</small></span>`;
-    pill.dataset.action = '';
-  }
-}
-
-document.getElementById('train-pill').addEventListener('click', async (e) => {
-  const pill = e.currentTarget;
-  const action = pill.dataset.action;
-  if(!action) return;
+async function startWorkout(btn){
+  const msg = btn.parentElement.querySelector('.rut-gate-msg');
   if(PREVIEW){
     // En la vista previa del panel solo se simula, no se guarda nada.
-    if(action === 'start') SESSIONS.unshift({ date: isoToday(), started_at: new Date().toISOString(), finished_at: null });
-    else { const ts = todaySession(); if(ts) ts.finished_at = new Date().toISOString(); }
-    refreshAttendance(); updateTrainFab();
-    return;
-  }
-  if(!USER_ID) return;
-  pill.disabled = true;
-  if(action === 'start'){
-    const todayKey = TODAY_KEYS[new Date().getDay()];
-    const { error } = await sb.from('workout_sessions')
-      .insert({ user_id: USER_ID, date: isoToday(), day_label: todayKey, started_at: new Date().toISOString() });
-    if(error && error.code !== '23505'){ pill.disabled = false; alertSoft('No se pudo registrar, probá de nuevo.'); return; }
+    SESSIONS.unshift({ date: isoToday(), started_at: new Date().toISOString() });
   } else {
-    const ts = todaySession();
-    if(ts?.id) await sb.from('workout_sessions').update({ finished_at: new Date().toISOString() }).eq('id', ts.id);
+    if(!USER_ID) return;
+    btn.disabled = true;
+    const { error } = await sb.from('workout_sessions')
+      .insert({ user_id: USER_ID, date: isoToday(), day_label: TODAY_KEYS[new Date().getDay()], started_at: new Date().toISOString() });
+    if(error && error.code !== '23505'){
+      btn.disabled = false;
+      if(msg) msg.textContent = 'No se pudo registrar. Revisá tu conexión y probá de nuevo.';
+      return;
+    }
+    await loadSessions();
   }
-  await loadSessions();
-});
-
-function alertSoft(msg){
-  const pill = document.getElementById('train-pill');
-  pill.innerHTML = `<span class="tp-text">${esc(msg)}</span>`;
-  setTimeout(() => updateTrainFab(), 2500);
+  refreshAttendance();
+  updateTrainLock();
+  window.scrollTo({ top: document.getElementById('dn-rutina').offsetTop - 70, behavior: 'smooth' });
 }
 
 document.addEventListener('change', (e) => {

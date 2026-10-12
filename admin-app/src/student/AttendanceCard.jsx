@@ -15,7 +15,7 @@ export default function AttendanceCard({ student }) {
 
   useEffect(() => {
     let alive = true;
-    const load = () => sb.from('workout_sessions').select('date,started_at,finished_at').eq('user_id', student.user_id)
+    const load = () => sb.from('workout_sessions').select('date,started_at').eq('user_id', student.user_id)
       .order('date', { ascending: false }).limit(400)
       .then(({ data, error }) => { if (alive) setSessions(error ? [] : data || []); });
     load();
@@ -35,8 +35,10 @@ export default function AttendanceCard({ student }) {
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const lead = (first.getDay() + 6) % 7;
   const today = isoToday();
-  const minutes = Object.values(byDate).filter((s) => s.finished_at).map((s) => (new Date(s.finished_at) - new Date(s.started_at)) / 60000);
-  const avg = minutes.length ? Math.round(minutes.reduce((a, b) => a + b, 0) / minutes.length) : null;
+  // Lunes de esta semana -> cuántos días entrenó en la semana en curso.
+  const monday = new Date(); monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  const mondayIso = monday.getFullYear() + '-' + String(monday.getMonth() + 1).padStart(2, '0') + '-' + String(monday.getDate()).padStart(2, '0');
+  const thisWeek = list.filter((s) => s.date >= mondayIso && s.date <= today).length;
   const last = list[0]?.date;
 
   return (
@@ -54,7 +56,7 @@ export default function AttendanceCard({ student }) {
       </Stack>
       <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
         <Stat label="Días en el mes" value={Object.keys(byDate).length} hi />
-        <Stat label="Promedio" value={avg !== null ? avg + ' min' : '—'} />
+        <Stat label="Esta semana" value={thisWeek} />
         <Stat label={`Total ${y}`} value={list.filter((s) => s.date.startsWith(String(y))).length} />
       </Stack>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.5, textAlign: 'center' }}>
