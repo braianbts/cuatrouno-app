@@ -500,6 +500,31 @@ table.t td:first-child{color:var(--ink);font-weight:600;padding-right:16px;width
 .att-day .dot{width:6px;height:6px;border-radius:50%;background:var(--red);margin-top:3px;box-shadow:0 0 0 2px rgba(200,30,30,.15)}
 .att-day .dot.none{background:transparent;box-shadow:none}
 .att-foot{font-size:11.5px;color:var(--muted);margin-top:10px;text-align:center}
+.att-views{display:flex;gap:4px;background:var(--surface-alt);border:1px solid var(--line);border-radius:999px;padding:3px;margin-bottom:14px}
+.att-views button{flex:1;border:none;background:none;border-radius:999px;padding:7px 0;font-family:inherit;font-size:12px;font-weight:800;color:var(--muted);cursor:pointer}
+.att-views button.on{background:var(--surface);color:var(--ink);box-shadow:0 2px 8px rgba(23,18,15,.08)}
+
+/* mapa de calor anual (semanas en columnas, días en filas) */
+.heat-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.heat-count{font-size:16px;font-weight:800;letter-spacing:-.01em}
+.heat-year{appearance:none;-webkit-appearance:none;border:1px solid var(--line-strong);background:var(--surface-alt);border-radius:999px;padding:6px 26px 6px 12px;font-family:inherit;font-size:13px;font-weight:800;color:var(--ink);background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 13px) 55%,calc(100% - 9px) 55%;background-size:4px 4px,4px 4px;background-repeat:no-repeat}
+.heat-wrap{display:flex;gap:6px}
+.heat-rows{display:grid;grid-template-rows:14px repeat(7,13px);row-gap:3px;font-size:9.5px;font-weight:700;color:var(--soft);flex-shrink:0}
+.heat-rows span{line-height:13px}
+.heat-scroll{overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
+.heat-scroll::-webkit-scrollbar{display:none}
+.heat-grid{display:grid;grid-auto-flow:column;grid-template-rows:14px repeat(7,13px);grid-auto-columns:13px;gap:3px;width:max-content;padding-right:2px}
+.heat-month{font-size:9.5px;font-weight:700;color:var(--soft);white-space:nowrap;line-height:14px}
+.heat-cell{border-radius:3.5px;background:rgba(23,18,15,.06)}
+.heat-cell.out{background:transparent}
+.heat-cell.l1{background:#f6c9c3}
+.heat-cell.l2{background:#ec8f84}
+.heat-cell.l3{background:#dc4a3c}
+.heat-cell.l4{background:#b81818}
+.heat-cell.today{box-shadow:0 0 0 1.5px var(--ink)}
+.heat-legend{display:flex;align-items:center;justify-content:space-between;margin-top:12px;font-size:11px;color:var(--soft);font-weight:700}
+.heat-legend .scale{display:flex;align-items:center;gap:3px}
+.heat-legend .scale i{width:11px;height:11px;border-radius:3px;display:block}
 
 /* botón glass "Empezar entrenamiento" (solo en Rutina) */
 .train-fab{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 96px);z-index:60;display:none;justify-content:center;pointer-events:none;padding:0 16px}
@@ -987,6 +1012,7 @@ function render(){
   restoreVariants();
   if(!rendered) document.body.dataset.tab = 'dn-resumen';
   updateTrainFab();
+  scrollHeatToEnd();
   rendered = true;
 }
 
@@ -1081,6 +1107,7 @@ document.addEventListener('click', async (e) => {
     document.body.dataset.tab = tab.dataset.tab;
     window.scrollTo({ top: 0, behavior: 'instant' });
     if(tab.dataset.tab === 'dn-progreso'){
+      scrollHeatToEnd();
       const pane = document.querySelector('.pday-pane.active');
       if(pane) loadHistoryForPane(pane);
     }
@@ -1089,6 +1116,8 @@ document.addEventListener('click', async (e) => {
 
   const attNav = t.closest('[data-att-nav]');
   if(attNav){ attMonthOffset += Number(attNav.dataset.attNav); refreshAttendance(); return; }
+  const attViewBtn = t.closest('[data-att-view]');
+  if(attViewBtn){ attView = attViewBtn.dataset.attView; refreshAttendance(); return; }
 
   if(t.closest('#btn-salir')){
     // La sesión vive en la app principal: le pedimos que cierre sesión.
@@ -1244,16 +1273,29 @@ async function saveLog(btn){
 let USER_ID = null;
 let SESSIONS = [];          // [{ date:'AAAA-MM-DD', started_at, finished_at }]
 let attMonthOffset = 0;     // 0 = mes actual, -1 = anterior…
+let attView = 'year';       // 'year' (mapa de calor) | 'month' (calendario)
+let heatYear = new Date().getFullYear();
+let DAY_SETS = {};          // 'AAAA-MM-DD' -> series cargadas ese día
 let trainTimer = null;
 const MONTH_NAMES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
 async function loadSessions(){
   if(PREVIEW || !USER_ID) return;
-  const { data, error } = await sb.from('workout_sessions')
-    .select('id,date,started_at,finished_at').eq('user_id', USER_ID)
-    .order('date', { ascending: false }).limit(400);
-  if(error) return;   // tabla todavía no creada: el botón y el calendario quedan sin datos
-  SESSIONS = data || [];
+  const [ses, logs] = await Promise.all([
+    sb.from('workout_sessions').select('id,date,started_at,finished_at').eq('user_id', USER_ID)
+      .order('date', { ascending: false }).limit(800),
+    // Series cargadas en Progreso: dan la intensidad del mapa de calor (y los días entrenados de antes del botón).
+    sb.from('exercise_logs').select('date,set1_weight,set2_weight,set3_weight').eq('athlete', athlete())
+      .order('date', { ascending: false }).limit(5000),
+  ]);
+  if(!ses.error) SESSIONS = ses.data || [];
+  if(!logs.error){
+    DAY_SETS = {};
+    (logs.data || []).forEach(l => {
+      const n = [l.set1_weight, l.set2_weight, l.set3_weight].filter(v => v !== null && v !== undefined).length;
+      DAY_SETS[l.date] = (DAY_SETS[l.date] || 0) + n;
+    });
+  }
   refreshAttendance();
   updateTrainFab();
 }
@@ -1261,12 +1303,80 @@ const todaySession = () => SESSIONS.find(s => s.date === isoToday());
 
 function refreshAttendance(){
   const el = document.getElementById('att-card');
-  if(el) el.innerHTML = renderAttendance();
+  if(el){ el.innerHTML = renderAttendance(); scrollHeatToEnd(); }
+}
+// El mapa arranca mostrando las semanas más recientes (como el de la imagen).
+function scrollHeatToEnd(){
+  const sc = document.querySelector('.heat-scroll');
+  if(sc) sc.scrollLeft = sc.scrollWidth;
+}
+
+// Días entrenados = tocó "Empezar entrenamiento" o cargó pesos ese día.
+function trainedDays(){
+  const set = new Set(SESSIONS.map(s => s.date));
+  Object.keys(DAY_SETS).forEach(d => set.add(d));
+  return set;
+}
+function heatLevel(iso, trained){
+  if(!trained.has(iso)) return 0;
+  const n = DAY_SETS[iso] || 0;
+  if(n >= 18) return 4;
+  if(n >= 12) return 3;
+  if(n >= 6) return 2;
+  return 1;
+}
+
+function renderAttendance(){
+  return `<div class="att-views">
+      <button data-att-view="year" class="${attView === 'year' ? 'on' : ''}">Año</button>
+      <button data-att-view="month" class="${attView === 'month' ? 'on' : ''}">Mes</button>
+    </div>${attView === 'year' ? renderHeatmap() : renderMonth()}`;
+}
+
+function renderHeatmap(){
+  const trained = trainedDays();
+  const today = isoToday();
+  const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const years = [...new Set([new Date().getFullYear(), ...[...trained].map(d => Number(d.slice(0, 4)))])].sort((a, b) => b - a);
+  const y = heatYear;
+  // Semanas de lunes a domingo, desde la que contiene el 1/1 hasta hoy (o el 31/12 si es un año pasado).
+  const start = new Date(y, 0, 1); start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+  const lastDay = y === new Date().getFullYear() ? new Date() : new Date(y, 11, 31);
+  const end = new Date(lastDay); end.setDate(end.getDate() + (6 - (end.getDay() + 6) % 7));
+  const cells = [];
+  let prevMonth = -1;
+  let count = 0;
+  for(const w = new Date(start); w <= end; w.setDate(w.getDate() + 7)){
+    // Etiqueta del mes arriba de la semana donde empieza (solo si cae dentro del año).
+    const firstIn = [...Array(7)].map((_, i) => { const x = new Date(w); x.setDate(x.getDate() + i); return x; }).find(x => x.getFullYear() === y);
+    const m = firstIn ? firstIn.getMonth() : -1;
+    cells.push(`<span class="heat-month">${m !== prevMonth && m >= 0 && firstIn.getDate() <= 7 ? MONTH_NAMES[m].slice(0, 3) : ''}</span>`);
+    if(m >= 0) prevMonth = m;
+    for(let i = 0; i < 7; i++){
+      const d = new Date(w); d.setDate(d.getDate() + i);
+      const key = iso(d);
+      if(d.getFullYear() !== y || key > today){ cells.push('<i class="heat-cell out"></i>'); continue; }
+      const lv = heatLevel(key, trained);
+      if(lv) count++;
+      const title = lv ? `${d.getDate()}/${d.getMonth() + 1} · ${DAY_SETS[key] ? DAY_SETS[key] + ' series' : 'entrenó'}` : `${d.getDate()}/${d.getMonth() + 1}`;
+      cells.push(`<i class="heat-cell${lv ? ' l' + lv : ''}${key === today ? ' today' : ''}" title="${title}"></i>`);
+    }
+  }
+  return `<div class="heat-head">
+      <div class="heat-count">${count} entrenamiento${count === 1 ? '' : 's'}</div>
+      <select class="heat-year" data-heat-year aria-label="Año">${years.map(v => `<option value="${v}"${v === y ? ' selected' : ''}>${v}</option>`).join('')}</select>
+    </div>
+    <div class="heat-wrap">
+      <div class="heat-rows"><span></span><span>Lun</span><span></span><span>Mié</span><span></span><span>Vie</span><span></span><span>Dom</span></div>
+      <div class="heat-scroll"><div class="heat-grid">${cells.join('')}</div></div>
+    </div>
+    <div class="heat-legend"><span>Series</span><span class="scale">Menos <i style="background:rgba(23,18,15,.06)"></i><i style="background:#f6c9c3"></i><i style="background:#ec8f84"></i><i style="background:#dc4a3c"></i><i style="background:#b81818"></i> Más</span></div>
+    ${PREVIEW ? '<div class="att-foot">Vista previa: el alumno ve acá su año de entrenamientos.</div>' : ''}`;
 }
 
 // Semanas seguidas (lunes a domingo) con al menos un entrenamiento, contando hacia atrás desde esta.
 function weekStreak(){
-  const days = new Set(SESSIONS.map(s => s.date));
+  const days = trainedDays();
   const monday = d => { const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
   const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   const has = start => { for(let i = 0; i < 7; i++){ const x = new Date(start); x.setDate(x.getDate() + i); if(days.has(iso(x))) return true; } return false; };
@@ -1276,12 +1386,12 @@ function weekStreak(){
   return streak;
 }
 
-function renderAttendance(){
+function renderMonth(){
   const now = new Date();
   const first = new Date(now.getFullYear(), now.getMonth() + attMonthOffset, 1);
   const y = first.getFullYear(), m = first.getMonth();
   const prefix = y + '-' + String(m + 1).padStart(2, '0');
-  const done = new Set(SESSIONS.filter(s => s.date.startsWith(prefix)).map(s => s.date));
+  const done = new Set([...trainedDays()].filter(d => d.startsWith(prefix)));
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const lead = (first.getDay() + 6) % 7;   // semana empieza el lunes
   const today = isoToday();
@@ -1292,7 +1402,7 @@ function renderAttendance(){
     const cls = ['att-day', done.has(iso) ? 'done' : '', iso === today ? 'today' : '', iso > today ? 'future' : ''].filter(Boolean).join(' ');
     cells.push(`<div class="${cls}">${d}<span class="dot${done.has(iso) ? '' : ' none'}"></span></div>`);
   }
-  const yearCount = SESSIONS.filter(s => s.date.startsWith(String(y))).length;
+  const yearCount = [...trainedDays()].filter(d => d.startsWith(String(y))).length;
   const isCurrent = attMonthOffset === 0;
   return `<div class="att-head">
       <button class="att-nav" data-att-nav="-1" aria-label="Mes anterior">‹</button>
@@ -1305,7 +1415,7 @@ function renderAttendance(){
       <div class="att-stat"><b>${yearCount}</b><span>En ${y}</span></div>
     </div>
     <div class="att-grid">${['L','M','M','J','V','S','D'].map(d => `<div class="att-dow">${d}</div>`).join('')}${cells.join('')}</div>
-    <div class="att-foot">${PREVIEW ? 'Vista previa: el alumno ve acá sus días entrenados.' : 'Cada punto rojo es un día que tocaste “Empezar entrenamiento”.'}</div>`;
+    <div class="att-foot">${PREVIEW ? 'Vista previa: el alumno ve acá sus días entrenados.' : 'Cada punto rojo es un día que entrenaste.'}</div>`;
 }
 
 function fmtElapsed(ms){
@@ -1368,6 +1478,10 @@ function alertSoft(msg){
   pill.innerHTML = `<span class="tp-text">${esc(msg)}</span>`;
   setTimeout(() => updateTrainFab(), 2500);
 }
+
+document.addEventListener('change', (e) => {
+  if(e.target.matches('[data-heat-year]')){ heatYear = Number(e.target.value); refreshAttendance(); }
+});
 
 // Si la app queda abierta pasada la medianoche o vuelve del segundo plano, se actualiza el estado del día.
 document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') loadSessions(); });
