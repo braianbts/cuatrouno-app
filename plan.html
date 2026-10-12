@@ -477,6 +477,51 @@ table.t td:first-child{color:var(--ink);font-weight:600;padding-right:16px;width
 #wk-box .day-nav{gap:5px}
 #wk-box .day-btn{padding-left:9px;padding-right:9px;font-size:11px;letter-spacing:.02em}
 @media (prefers-reduced-motion:reduce){.wk-chip:not(.on) .wk-chip-dot::after,#wk-box{animation:none}}
+
+/* asistencia: calendario mensual */
+.att-card{padding:16px 16px 14px;margin-bottom:18px}
+.att-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.att-title{flex:1;font-size:15px;font-weight:800;text-transform:capitalize}
+.att-nav{width:32px;height:32px;border-radius:50%;border:1px solid var(--line-strong);background:var(--surface-alt);color:var(--ink);font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.att-nav:disabled{opacity:.35;cursor:default}
+.att-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px}
+.att-stat{background:var(--surface-alt);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.att-stat b{display:block;font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.att-stat span{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--soft)}
+.att-stat.hi{background:var(--grad-red);border-color:transparent;color:#fff}
+.att-stat.hi span{color:rgba(255,255,255,.8)}
+.att-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.att-dow{font-size:10px;font-weight:800;letter-spacing:.06em;color:var(--soft);padding-bottom:4px}
+.att-day{position:relative;height:38px;border-radius:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--ink)}
+.att-day.out{visibility:hidden}
+.att-day.future{color:var(--soft);font-weight:600}
+.att-day.today{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.att-day.done{background:var(--red-dim)}
+.att-day .dot{width:6px;height:6px;border-radius:50%;background:var(--red);margin-top:3px;box-shadow:0 0 0 2px rgba(200,30,30,.15)}
+.att-day .dot.none{background:transparent;box-shadow:none}
+.att-foot{font-size:11.5px;color:var(--muted);margin-top:10px;text-align:center}
+
+/* botón glass "Empezar entrenamiento" (solo en Rutina) */
+.train-fab{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 96px);z-index:60;display:none;justify-content:center;pointer-events:none;padding:0 16px}
+body[data-tab="dn-rutina"] .train-fab{display:flex}
+body[data-tab="dn-rutina"] .wa-fab{display:none}
+.train-pill{pointer-events:auto;display:flex;align-items:center;gap:10px;max-width:100%;
+  padding:8px 8px 8px 18px;border-radius:999px;border:1px solid rgba(255,255,255,.75);
+  background:rgba(255,255,255,.42);backdrop-filter:blur(18px) saturate(170%);-webkit-backdrop-filter:blur(18px) saturate(170%);
+  box-shadow:0 14px 34px rgba(23,18,15,.18), inset 0 1px 0 rgba(255,255,255,.8);
+  color:var(--ink);font-family:inherit;font-size:14px;font-weight:800;letter-spacing:-.005em;cursor:pointer;
+  transition:transform .15s, background .25s}
+.train-pill:active{transform:scale(.97)}
+.train-pill .tp-icon{width:34px;height:34px;border-radius:50%;background:var(--grad-red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 6px 16px rgba(200,30,30,.35);flex-shrink:0}
+.train-pill .tp-text{display:flex;flex-direction:column;line-height:1.15;text-align:left}
+.train-pill .tp-text small{font-size:10.5px;font-weight:700;color:var(--muted)}
+.train-pill .tp-live{width:9px;height:9px;border-radius:50%;background:var(--red);position:relative;flex-shrink:0}
+.train-pill .tp-live::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--red-bright);animation:wkPulse 1.8s ease-out infinite}
+.train-pill .tp-stop{padding:9px 14px;border-radius:999px;background:var(--ink);color:#fff;font-size:12px;font-weight:800;flex-shrink:0}
+.train-pill.done{cursor:default;padding-right:18px}
+.train-pill.done .tp-icon{background:var(--good);box-shadow:0 6px 16px rgba(31,157,85,.3)}
+.train-pill[disabled]{opacity:.7}
+#dn-rutina{padding-bottom:84px}
 </style>
 <style id="custom-css"></style>
 </head>
@@ -484,6 +529,8 @@ table.t td:first-child{color:var(--ink);font-weight:600;padding-right:16px;width
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 
 <div id="app"><div class="plan-empty">Cargando tu plan…</div></div>
+
+<div class="train-fab" id="train-fab"><button class="train-pill" id="train-pill" type="button"></button></div>
 
 <!-- ===================== FRUIT SHEET ===================== -->
 <div class="fruit-overlay" id="fruit-overlay"></div>
@@ -809,7 +856,8 @@ function renderProgreso(){
   const days = trainingDays()
     .map(d => ({ day: d.day, exs: dayExercises(d).filter(e => e.log !== 'none') }))
     .filter(d => d.exs.length);
-  const head = sectionHead({ title: s.title || 'Progreso', subtitle: s.subtitle ?? '/ pesos', lead: s.lead ?? 'Cargá el peso de cada serie después de entrenar. Se guarda para siempre y podés ver la evolución semana a semana.' });
+  const head = `<div class="card att-card" id="att-card">${renderAttendance()}</div>` +
+    sectionHead({ title: s.title || 'Progreso', subtitle: s.subtitle ?? '/ pesos', lead: s.lead ?? 'Cargá el peso de cada serie después de entrenar. Se guarda para siempre y podés ver la evolución semana a semana.' });
   if(!days.length) return head + '<div class="card"><p class="section-lead" style="margin:0">Todavía no hay ejercicios para registrar.</p></div>';
   return head + `<div class="day-nav">${days.map((d, i) =>
       `<button class="pday-btn${i === 0 ? ' active' : ''}" data-pday="${i}">${esc(d.day)}</button>`).join('')}</div>
@@ -937,6 +985,8 @@ function render(){
   }
   applyPaymentReminder();
   restoreVariants();
+  if(!rendered) document.body.dataset.tab = 'dn-resumen';
+  updateTrainFab();
   rendered = true;
 }
 
@@ -1028,6 +1078,7 @@ document.addEventListener('click', async (e) => {
     document.querySelectorAll('.tab-pane').forEach(s => s.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById(tab.dataset.tab).classList.add('active');
+    document.body.dataset.tab = tab.dataset.tab;
     window.scrollTo({ top: 0, behavior: 'instant' });
     if(tab.dataset.tab === 'dn-progreso'){
       const pane = document.querySelector('.pday-pane.active');
@@ -1035,6 +1086,9 @@ document.addEventListener('click', async (e) => {
     }
     return;
   }
+
+  const attNav = t.closest('[data-att-nav]');
+  if(attNav){ attMonthOffset += Number(attNav.dataset.attNav); refreshAttendance(); return; }
 
   if(t.closest('#btn-salir')){
     // La sesión vive en la app principal: le pedimos que cierre sesión.
@@ -1186,6 +1240,138 @@ async function saveLog(btn){
   setTimeout(() => { msgEl.textContent = ''; msgEl.classList.remove('ok'); }, 3000);
 }
 
+// ---------- asistencia: "Empezar entrenamiento" + calendario mensual ----------
+let USER_ID = null;
+let SESSIONS = [];          // [{ date:'AAAA-MM-DD', started_at, finished_at }]
+let attMonthOffset = 0;     // 0 = mes actual, -1 = anterior…
+let trainTimer = null;
+const MONTH_NAMES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+async function loadSessions(){
+  if(PREVIEW || !USER_ID) return;
+  const { data, error } = await sb.from('workout_sessions')
+    .select('id,date,started_at,finished_at').eq('user_id', USER_ID)
+    .order('date', { ascending: false }).limit(400);
+  if(error) return;   // tabla todavía no creada: el botón y el calendario quedan sin datos
+  SESSIONS = data || [];
+  refreshAttendance();
+  updateTrainFab();
+}
+const todaySession = () => SESSIONS.find(s => s.date === isoToday());
+
+function refreshAttendance(){
+  const el = document.getElementById('att-card');
+  if(el) el.innerHTML = renderAttendance();
+}
+
+// Semanas seguidas (lunes a domingo) con al menos un entrenamiento, contando hacia atrás desde esta.
+function weekStreak(){
+  const days = new Set(SESSIONS.map(s => s.date));
+  const monday = d => { const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+  const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const has = start => { for(let i = 0; i < 7; i++){ const x = new Date(start); x.setDate(x.getDate() + i); if(days.has(iso(x))) return true; } return false; };
+  let w = monday(new Date()), streak = 0;
+  if(!has(w)) w.setDate(w.getDate() - 7);   // la semana actual todavía puede completarse
+  while(has(w)){ streak++; w.setDate(w.getDate() - 7); }
+  return streak;
+}
+
+function renderAttendance(){
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth() + attMonthOffset, 1);
+  const y = first.getFullYear(), m = first.getMonth();
+  const prefix = y + '-' + String(m + 1).padStart(2, '0');
+  const done = new Set(SESSIONS.filter(s => s.date.startsWith(prefix)).map(s => s.date));
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const lead = (first.getDay() + 6) % 7;   // semana empieza el lunes
+  const today = isoToday();
+  const cells = [];
+  for(let i = 0; i < lead; i++) cells.push('<div class="att-day out"></div>');
+  for(let d = 1; d <= daysInMonth; d++){
+    const iso = prefix + '-' + String(d).padStart(2, '0');
+    const cls = ['att-day', done.has(iso) ? 'done' : '', iso === today ? 'today' : '', iso > today ? 'future' : ''].filter(Boolean).join(' ');
+    cells.push(`<div class="${cls}">${d}<span class="dot${done.has(iso) ? '' : ' none'}"></span></div>`);
+  }
+  const yearCount = SESSIONS.filter(s => s.date.startsWith(String(y))).length;
+  const isCurrent = attMonthOffset === 0;
+  return `<div class="att-head">
+      <button class="att-nav" data-att-nav="-1" aria-label="Mes anterior">‹</button>
+      <div class="att-title">${MONTH_NAMES[m]} ${y}</div>
+      <button class="att-nav" data-att-nav="1" aria-label="Mes siguiente"${isCurrent ? ' disabled' : ''}>›</button>
+    </div>
+    <div class="att-stats">
+      <div class="att-stat hi"><b>${done.size}</b><span>${isCurrent ? 'Este mes' : 'En el mes'}</span></div>
+      <div class="att-stat"><b>${weekStreak()}</b><span>Sem. seguidas</span></div>
+      <div class="att-stat"><b>${yearCount}</b><span>En ${y}</span></div>
+    </div>
+    <div class="att-grid">${['L','M','M','J','V','S','D'].map(d => `<div class="att-dow">${d}</div>`).join('')}${cells.join('')}</div>
+    <div class="att-foot">${PREVIEW ? 'Vista previa: el alumno ve acá sus días entrenados.' : 'Cada punto rojo es un día que tocaste “Empezar entrenamiento”.'}</div>`;
+}
+
+function fmtElapsed(ms){
+  const t = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+  return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0');
+}
+
+function updateTrainFab(){
+  const pill = document.getElementById('train-pill');
+  if(!pill) return;
+  clearInterval(trainTimer);
+  const ts = todaySession();
+  pill.className = 'train-pill';
+  pill.disabled = false;
+  if(!ts){
+    pill.innerHTML = '<span class="tp-icon">▶</span><span class="tp-text">Empezar entrenamiento<small>Suma el día a tu calendario</small></span>';
+    pill.dataset.action = 'start';
+  } else if(!ts.finished_at){
+    const tick = () => { const el = pill.querySelector('.tp-time'); if(el) el.textContent = fmtElapsed(Date.now() - new Date(ts.started_at).getTime()); };
+    pill.innerHTML = '<span class="tp-live"></span><span class="tp-text">Entrenando <span class="tp-time"></span><small>Día sumado al calendario</small></span><span class="tp-stop">Terminar</span>';
+    pill.dataset.action = 'finish';
+    tick();
+    trainTimer = setInterval(tick, 1000);
+  } else {
+    const mins = Math.round((new Date(ts.finished_at) - new Date(ts.started_at)) / 60000);
+    pill.className = 'train-pill done';
+    pill.innerHTML = `<span class="tp-icon">✓</span><span class="tp-text">Entrenamiento de hoy listo<small>${mins} min · ¡bien ahí!</small></span>`;
+    pill.dataset.action = '';
+  }
+}
+
+document.getElementById('train-pill').addEventListener('click', async (e) => {
+  const pill = e.currentTarget;
+  const action = pill.dataset.action;
+  if(!action) return;
+  if(PREVIEW){
+    // En la vista previa del panel solo se simula, no se guarda nada.
+    if(action === 'start') SESSIONS.unshift({ date: isoToday(), started_at: new Date().toISOString(), finished_at: null });
+    else { const ts = todaySession(); if(ts) ts.finished_at = new Date().toISOString(); }
+    refreshAttendance(); updateTrainFab();
+    return;
+  }
+  if(!USER_ID) return;
+  pill.disabled = true;
+  if(action === 'start'){
+    const todayKey = TODAY_KEYS[new Date().getDay()];
+    const { error } = await sb.from('workout_sessions')
+      .insert({ user_id: USER_ID, date: isoToday(), day_label: todayKey, started_at: new Date().toISOString() });
+    if(error && error.code !== '23505'){ pill.disabled = false; alertSoft('No se pudo registrar, probá de nuevo.'); return; }
+  } else {
+    const ts = todaySession();
+    if(ts?.id) await sb.from('workout_sessions').update({ finished_at: new Date().toISOString() }).eq('id', ts.id);
+  }
+  await loadSessions();
+});
+
+function alertSoft(msg){
+  const pill = document.getElementById('train-pill');
+  pill.innerHTML = `<span class="tp-text">${esc(msg)}</span>`;
+  setTimeout(() => updateTrainFab(), 2500);
+}
+
+// Si la app queda abierta pasada la medianoche o vuelve del segundo plano, se actualiza el estado del día.
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') loadSessions(); });
+
 // ---------- re-render conservando dónde estaba el alumno ----------
 function captureView(){
   return {
@@ -1232,7 +1418,8 @@ window.addEventListener('message', (e) => {
   const d = e.data || {};
   if(d.type === 'cuatrouno:plan') window.renderPlan(d.plan, d.student, d.payments);
   if(d.type === 'cuatrouno:session' && d.access_token){
-    sb.auth.setSession({ access_token: d.access_token, refresh_token: d.refresh_token });
+    sb.auth.setSession({ access_token: d.access_token, refresh_token: d.refresh_token })
+      .then(({ data }) => { if(data?.session?.user?.id && !USER_ID){ USER_ID = data.session.user.id; loadSessions(); } });
   }
 });
 

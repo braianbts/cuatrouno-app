@@ -84,6 +84,16 @@ const TABLES = {
   }
 });
 
+TABLES.workout_sessions = [];
+STUDENTS.forEach((s, i) => {
+  for (let d = 0; d < 40; d++) {
+    if ((d + i) % 3 === 0 || (d + i) % 7 === 1) {
+      const date = addDays(today, -d - (i ? 1 : 0));
+      TABLES.workout_sessions.push({ id: uid(), user_id: s.user_id, date, day_label: 'LUN', started_at: date + 'T18:00:00Z', finished_at: date + 'T19:05:00Z' });
+    }
+  }
+});
+
 const listeners = [];
 const emit = (table, row) => listeners.filter((l) => l.table === table).forEach((l) => setTimeout(() => l.cb({ new: row }), 50));
 

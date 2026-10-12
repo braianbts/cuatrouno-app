@@ -5,6 +5,7 @@ import { useData } from '../data';
 import { Empty } from '../components';
 import { fmtShortDate } from '../utils';
 import { BRAND } from '../theme';
+import AttendanceCard from './AttendanceCard';
 
 // Últimos registros de pesos agrupados por ejercicio (lo más reciente primero).
 export default function ProgressTab({ student }) {
@@ -29,12 +30,14 @@ export default function ProgressTab({ student }) {
     return [...m.entries()];
   }, [logs]);
 
-  if (logs === null) return <Box sx={{ display: 'grid', placeItems: 'center', py: 6 }}><CircularProgress /></Box>;
-  if (!logs.length) return <Card sx={{ p: 2 }}><Empty>Todavía no cargó pesos (clave: {athlete}).</Empty></Card>;
+  const attendance = <AttendanceCard student={student} />;
+  if (logs === null) return <Stack spacing={1.5}>{attendance}<Box sx={{ display: 'grid', placeItems: 'center', py: 6 }}><CircularProgress /></Box></Stack>;
+  if (!logs.length) return <Stack spacing={1.5}>{attendance}<Card sx={{ p: 2 }}><Empty>Todavía no cargó pesos (clave: {athlete}).</Empty></Card></Stack>;
 
   const best = (rows) => Math.max(...rows.flatMap((r) => [r.set1_weight, r.set2_weight, r.set3_weight]).filter((v) => v !== null && v !== undefined).map(Number));
   return (
     <Stack spacing={1.5}>
+      {attendance}
       <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>{logs.length} registros · {groups.length} ejercicios · último {fmtShortDate(logs[0].date)}</Typography>
       <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>
         {groups.map(([exercise, rows]) => {
