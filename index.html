@@ -246,77 +246,6 @@ body:has(.center-screen:not(.hidden)){overflow:hidden;overscroll-behavior:none}
   cursor:pointer;backdrop-filter:blur(12px);font-family:inherit;
 }
 
-/* ---- admin screen ---- */
-#admin-screen{position:relative;z-index:1}
-#admin-screen header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:16px 20px;border-bottom:1px solid var(--line);
-  position:sticky;top:0;background:rgba(11,7,7,.85);backdrop-filter:blur(16px);z-index:10;
-}
-#admin-screen header img{height:26px}
-#admin-screen main{max-width:960px;margin:0 auto;padding:28px 20px 60px;position:relative}
-.section-title{font-family:'Switzer',sans-serif;font-weight:800;font-size:21px;letter-spacing:-.01em;margin-bottom:4px}
-.section-lead{font-size:13px;color:var(--smoke);margin-bottom:18px}
-.card{
-  background:var(--glass);backdrop-filter:blur(24px) saturate(140%);-webkit-backdrop-filter:blur(24px) saturate(140%);
-  border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;
-  box-shadow:0 10px 32px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
-}
-.row{display:flex;gap:10px}
-.row .field{flex:1}
-
-.student-row{
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:15px 0;border-bottom:1px solid var(--line);cursor:pointer;
-}
-.student-row:last-child{border:none}
-.student-row:hover{opacity:.85}
-.student-name{font-size:14px;font-weight:700}
-.student-meta{font-size:12px;color:var(--ash);margin-top:2px}
-.badge{
-  font-size:9.5px;font-weight:800;padding:5px 12px;border-radius:var(--radius-pill);
-  letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;
-}
-.badge.al_dia{background:var(--good-dim);color:var(--good)}
-.badge.pendiente{background:var(--ember-dim);color:var(--ember-bright)}
-
-.tab-bar{display:flex;gap:8px;margin-bottom:22px}
-.tab-btn{
-  font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
-  color:var(--smoke);background:var(--glass);border:1px solid var(--line);
-  padding:9px 18px;border-radius:var(--radius-pill);cursor:pointer;font-family:inherit;
-}
-.tab-btn.active{color:#fff;background:var(--grad-ember);border-color:transparent}
-.tab-panel.hidden{display:none}
-
-.form-card{
-  background:var(--glass);backdrop-filter:blur(24px) saturate(140%);-webkit-backdrop-filter:blur(24px) saturate(140%);
-  border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:14px;
-  box-shadow:0 10px 32px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
-}
-.form-card-header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px}
-.form-card-name{font-size:15px;font-weight:800}
-.form-card-date{font-size:11px;color:var(--ash);white-space:nowrap}
-.form-fields{display:grid;grid-template-columns:1fr;gap:6px 18px;font-size:12.5px}
-@media(min-width:640px){.form-fields{grid-template-columns:1fr 1fr}}
-.form-field{display:flex;gap:6px}
-.form-field b{color:var(--smoke);font-weight:700;white-space:nowrap}
-.form-field span{color:var(--bone)}
-
-#detail-panel{display:none}
-#detail-panel.active{display:block}
-.detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px}
-.back-link{font-size:13px;color:var(--smoke);cursor:pointer;margin-bottom:16px;display:inline-block}
-.back-link:hover{color:var(--bone)}
-.block-label{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--smoke);margin:22px 0 10px}
-.progress-row{
-  display:flex;justify-content:space-between;gap:10px;padding:10px 0;
-  border-bottom:1px solid var(--line);font-size:12px;
-}
-.progress-row:last-child{border:none}
-.progress-row .pdate{color:var(--ash);white-space:nowrap;font-weight:700}
-.progress-row .pex{color:var(--smoke);flex:1}
-.progress-row .pval{color:var(--bone);font-weight:800;font-family:'Switzer',sans-serif;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -392,148 +321,6 @@ body:has(.center-screen:not(.hidden)){overflow:hidden;overscroll-behavior:none}
     allow="camera"></iframe>
 </div>
 
-<!-- ===================== ADMIN ===================== -->
-<div id="admin-screen" class="hidden">
-  <header>
-    <img src="shared/logo-cuatrouno.png" alt="Cuatrouno">
-    <button class="btn secondary" style="width:auto;padding:8px 16px;font-size:12px" id="logout-admin-btn">Salir</button>
-  </header>
-  <main>
-
-    <div class="tab-bar">
-      <button class="tab-btn active" id="tab-btn-alumnos">Alumnos</button>
-      <button class="tab-btn" id="tab-btn-formularios">Formularios</button>
-    </div>
-
-    <div id="tab-alumnos" class="tab-panel">
-
-    <p class="section-title">Nuevo alumno</p>
-    <p class="section-lead">Crea el acceso del alumno a la app. Después le compartís usuario y contraseña.</p>
-    <div class="card">
-      <form id="create-form">
-        <div class="row">
-          <div class="field">
-            <label>Nombre completo</label>
-            <input type="text" id="cs-fullname" required>
-          </div>
-        </div>
-        <div class="row">
-          <div class="field">
-            <label>Usuario (login)</label>
-            <input type="text" id="cs-username" required pattern="[a-z0-9-]+" placeholder="ej: juan-ignacio">
-          </div>
-          <div class="field">
-            <label>Slug (interno)</label>
-            <input type="text" id="cs-slug" required pattern="[a-z0-9-]+" placeholder="igual al usuario">
-          </div>
-        </div>
-        <div class="field">
-          <label>Contraseña</label>
-          <input type="text" id="cs-password" required minlength="8" placeholder="mínimo 8 caracteres">
-        </div>
-        <div class="field">
-          <label>Foto de perfil (opcional)</label>
-          <input type="file" id="cs-photo" accept="image/*">
-        </div>
-        <button type="submit" class="btn" id="create-btn">Crear alumno</button>
-        <div class="msg" id="create-msg"></div>
-      </form>
-    </div>
-
-    <div id="list-view">
-      <p class="section-title">Alumnos</p>
-      <p class="section-lead">Click en un alumno para ver su detalle, pago, plan y progreso.</p>
-      <div class="card" id="student-list">
-        <div class="msg">Cargando...</div>
-      </div>
-    </div>
-
-    <div id="detail-panel">
-      <span class="back-link" id="back-to-list">← Volver a la lista</span>
-      <div class="detail-header">
-        <p class="section-title" id="detail-name">—</p>
-        <span class="badge" id="detail-badge">—</span>
-      </div>
-      <p class="section-lead" id="detail-meta">—</p>
-
-      <p class="block-label">Foto de perfil</p>
-      <div class="card">
-        <div id="detail-photo-preview" style="margin-bottom:12px"></div>
-        <div class="field">
-          <label>Subir / reemplazar foto</label>
-          <input type="file" id="detail-photo-file" accept="image/*">
-        </div>
-        <div class="msg" id="photo-msg"></div>
-      </div>
-
-      <p class="block-label">Datos de acceso</p>
-      <div class="card">
-        <div class="field">
-          <label>Nombre completo</label>
-          <input type="text" id="detail-fullname">
-        </div>
-        <div class="field">
-          <label>Usuario (login)</label>
-          <input type="text" id="detail-username" pattern="[a-z0-9-]+" placeholder="ej: juan-ignacio">
-        </div>
-        <div class="field">
-          <label>Nueva contraseña</label>
-          <input type="text" id="detail-password" minlength="8" placeholder="dejar vacío para no cambiarla">
-        </div>
-        <button class="btn" id="save-access-btn">Guardar datos de acceso</button>
-        <div class="msg" id="access-msg"></div>
-      </div>
-
-      <p class="block-label">Estado de pago</p>
-      <div class="card">
-        <div class="field">
-          <label>Estado</label>
-          <select id="detail-status">
-            <option value="pendiente">Pendiente</option>
-            <option value="al_dia">Al día</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Nota (opcional)</label>
-          <input type="text" id="detail-note" placeholder="ej: debe cuota de agosto">
-        </div>
-        <button class="btn" id="save-status-btn">Guardar estado de pago</button>
-        <div class="msg" id="status-msg"></div>
-      </div>
-
-      <p class="block-label">Plan (HTML)</p>
-      <div class="card">
-        <div class="field">
-          <label>Cargar archivo del plan (index.html)</label>
-          <input type="file" id="detail-plan-file" accept=".html,text/html">
-        </div>
-        <div class="field">
-          <label>O pegá acá el HTML completo del plan</label>
-          <textarea id="detail-plan-html" placeholder="&lt;!DOCTYPE html&gt;..."></textarea>
-        </div>
-        <button class="btn" id="save-plan-btn">Guardar plan</button>
-        <div class="msg" id="plan-msg"></div>
-      </div>
-
-      <p class="block-label">Progreso reciente</p>
-      <div class="card" id="detail-progress">
-        <div class="msg">—</div>
-      </div>
-    </div>
-
-    </div>
-
-    <div id="tab-formularios" class="tab-panel hidden">
-      <p class="section-title">Formularios de alumnos</p>
-      <p class="section-lead">Fichas que completaron desde la web (salud, alimentación, entrenamiento).</p>
-      <div id="formularios-list">
-        <div class="msg">Cargando...</div>
-      </div>
-    </div>
-
-  </main>
-</div>
-
 <script>
 const SUPABASE_URL = 'https://yqzemrztgyripdgiwxtg.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxemVtcnp0Z3lyaXBkZ2l3eHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwODYxMzAsImV4cCI6MjA5ODY2MjEzMH0.RAb-oaJQRUQC84zekeAiysaYU6BD3Wtynd1QnGAc-fI';
@@ -555,17 +342,14 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 const loginScreen = document.getElementById('login-screen');
 const blockedScreen = document.getElementById('blocked-screen');
 const planScreen = document.getElementById('plan-screen');
-const adminScreen = document.getElementById('admin-screen');
 const loginForm = document.getElementById('login-form');
 const loginMsg = document.getElementById('login-msg');
 const loginBtn = document.getElementById('login-btn');
 
 let loginMode = 'student'; // 'student' | 'admin' — solo afecta qué campo se muestra, el ruteo real es por is_admin()
-let studentsCache = [];
-let currentStudentId = null;
 
 function showOnly(el){
-  [loginScreen, blockedScreen, planScreen, adminScreen].forEach(s => s.classList.add('hidden'));
+  [loginScreen, blockedScreen, planScreen].forEach(s => s.classList.add('hidden'));
   el.classList.remove('hidden');
 }
 
@@ -606,8 +390,8 @@ async function init(){
 async function routeAfterLogin(){
   const { data: isAdmin } = await sb.rpc('is_admin');
   if(isAdmin){
-    showOnly(adminScreen);
-    loadStudents();
+    // El panel de administración vive en /admin (React + Material UI).
+    location.replace('/admin/');
   } else {
     await enterStudentFlow();
   }
@@ -655,7 +439,6 @@ document.getElementById('refresh-blocked-btn').addEventListener('click', async (
   }
 });
 document.getElementById('logout-float').addEventListener('click', logout);
-document.getElementById('logout-admin-btn').addEventListener('click', logout);
 
 function setBlockedWa(msg){
   document.getElementById('blocked-wa').href = 'https://wa.me/5493484381444?text=' + encodeURIComponent(msg);
@@ -691,9 +474,13 @@ async function enterStudentFlow(){
     return;
   }
 
-  const { data: plan } = await sb.from('student_plans').select('html').eq('user_id', session.user.id).maybeSingle();
+  let { data: plan, error: planErr } = await sb.from('student_plans').select('html,data,updated_at').eq('user_id', session.user.id).maybeSingle();
+  if(planErr){
+    // Respaldo por si la columna data todavía no existe en la base: se sigue mostrando el HTML.
+    ({ data: plan } = await sb.from('student_plans').select('html').eq('user_id', session.user.id).maybeSingle());
+  }
 
-  if(!plan || !plan.html){
+  if(!plan || (!plan.html && !plan.data)){
     document.getElementById('blocked-title').textContent = 'Plan no disponible';
     document.getElementById('blocked-text').textContent = 'Tu plan todavía no está cargado. Hablá con Braian.';
     setBlockedWa('Hola Brai, soy ' + student.full_name + '. Mi plan todavía no está cargado en la app.');
@@ -703,6 +490,24 @@ async function enterStudentFlow(){
   }
 
   const iframe = document.getElementById('plan-frame');
+  watchPlan(session.user.id, plan);
+
+  if(plan.data){
+    // Plan editable: plantilla única + JSON. Se manda cuando la plantilla avisa que está lista.
+    planPayload = {
+      plan: plan.data,
+      student: { full_name: student.full_name, photo_url: student.photo_url, slug: student.slug },
+      payments: await loadMyPayments(session.user.id)
+    };
+    iframe.removeAttribute('srcdoc');
+    if(!iframe.src.endsWith('/plan.html')) iframe.src = '/plan.html';
+    else sendPlanToFrame();
+    showOnly(planScreen);
+    return;
+  }
+
+  planPayload = null;
+  iframe.removeAttribute('src');
   iframe.addEventListener('load', () => {
     // La foto sale de la ficha (la que se sube desde el admin), no de la URL escrita en el HTML del plan.
     if(student.photo_url){
@@ -723,290 +528,86 @@ async function enterStudentFlow(){
   showOnly(planScreen);
 }
 
-// ================= FLUJO ADMIN =================
-document.getElementById('cs-username').addEventListener('input', (e) => {
-  const slugField = document.getElementById('cs-slug');
-  if(!slugField.dataset.touched) slugField.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,'');
-});
-document.getElementById('cs-slug').addEventListener('input', (e) => { e.target.dataset.touched = '1'; });
-
-document.getElementById('create-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const btn = document.getElementById('create-btn');
-  const msg = document.getElementById('create-msg');
-  btn.disabled = true; btn.textContent = 'Creando...'; msg.textContent = ''; msg.className = 'msg';
-  const full_name = document.getElementById('cs-fullname').value.trim();
-  const username = document.getElementById('cs-username').value.trim().toLowerCase();
-  const slug = document.getElementById('cs-slug').value.trim().toLowerCase();
-  const password = document.getElementById('cs-password').value;
-  const photoFile = document.getElementById('cs-photo').files[0];
-  const { data, error } = await sb.functions.invoke('create-student', { body: { username, password, full_name, slug } });
-  btn.disabled = false; btn.textContent = 'Crear alumno';
-  if(error || data?.error){
-    msg.textContent = data?.error || error.message || 'Error al crear el alumno.';
-    msg.className = 'msg error';
-    return;
-  }
-  msg.textContent = '✓ Alumno creado: ' + username;
-  msg.className = 'msg ok';
-
-  if(photoFile && data?.user_id){
-    msg.textContent += ' — subiendo foto...';
-    const photoUrl = await uploadStudentPhoto(data.user_id, slug, photoFile);
-    if(photoUrl){
-      await sb.from('students').update({ photo_url: photoUrl }).eq('user_id', data.user_id);
-      msg.textContent = '✓ Alumno creado con foto: ' + username;
-    } else {
-      msg.textContent = '✓ Alumno creado (la foto no se pudo subir, se puede cargar después): ' + username;
-    }
-  }
-
-  document.getElementById('create-form').reset();
-  delete document.getElementById('cs-slug').dataset.touched;
-  loadStudents();
-});
-
-async function uploadStudentPhoto(userId, slug, file){
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-  const path = slug + '/profile.' + ext;
-  const { error } = await sb.storage.from('student-photos').upload(path, file, { upsert: true });
-  if(error) return null;
-  const { data } = sb.storage.from('student-photos').getPublicUrl(path);
-  // ?v= evita que el CDN/navegador sigan mostrando la foto anterior (misma ruta, upsert).
-  return data?.publicUrl ? data.publicUrl + '?v=' + Date.now() : null;
+// ---- Plan editable en vivo ----
+// Cuotas cargadas desde el panel: reemplazan a las escritas en el plan (null si todavía no hay / no existe la tabla).
+async function loadMyPayments(userId){
+  const { data, error } = await sb.from('payments')
+    .select('concept,amount,due_date,status,paid_at,method')
+    .eq('user_id', userId)
+    .order('due_date', { ascending: true });
+  return error ? null : data;
+}
+async function refreshPayments(){
+  if(!planPayload || !planWatch) return;
+  planPayload.payments = await loadMyPayments(planWatch.userId);
+  sendPlanToFrame();
 }
 
-// ================= TABS (Alumnos / Formularios) =================
-let formulariosLoaded = false;
-document.getElementById('tab-btn-alumnos').addEventListener('click', () => switchTab('alumnos'));
-document.getElementById('tab-btn-formularios').addEventListener('click', () => switchTab('formularios'));
+let planPayload = null;     // { plan, student } que se le manda a /plan.html
+let planWatch = null;       // { userId, updatedAt, mode, channel }
 
-function switchTab(tab){
-  document.getElementById('tab-btn-alumnos').classList.toggle('active', tab === 'alumnos');
-  document.getElementById('tab-btn-formularios').classList.toggle('active', tab === 'formularios');
-  document.getElementById('tab-alumnos').classList.toggle('hidden', tab !== 'alumnos');
-  document.getElementById('tab-formularios').classList.toggle('hidden', tab !== 'formularios');
-  if(tab === 'formularios' && !formulariosLoaded){
-    formulariosLoaded = true;
-    loadFormularios();
-  }
-}
-
-const FORM_FIELD_LABELS = {
-  edad:'Edad', telefono:'WhatsApp', email:'Email', altura:'Altura', peso:'Peso',
-  lesiones:'Lesiones/condiciones', cirugias:'Cirugías/intervenciones', medicacion:'Medicación', habitos:'Hábitos',
-  suplementacion:'Suplementación', comidas_por_dia:'Comidas/día', alergias:'Alergias',
-  preferencias_comida:'Preferencias/no come', dieta_actual:'Dieta actual', notas_alimentacion:'Algo más que deba saber',
-  objetivo:'Objetivo', experiencia:'Experiencia', dias_disponibles:'Días disponibles', lugar_entrenamiento:'Lugar',
-};
-
-async function loadFormularios(){
-  const listEl = document.getElementById('formularios-list');
-  const { data, error } = await sb.from('formularios').select('*').order('recibido_en', { ascending: false });
-  if(error){ listEl.innerHTML = '<div class="msg error">Error cargando formularios.</div>'; return; }
-  if(!data || data.length === 0){ listEl.innerHTML = '<div class="msg">Todavía no hay fichas.</div>'; return; }
-  listEl.innerHTML = data.map(f => {
-    const fecha = new Date(f.recibido_en).toLocaleString('es-AR');
-    const fields = Object.entries(FORM_FIELD_LABELS)
-      .filter(([key]) => f[key])
-      .map(([key, label]) => `<div class="form-field"><b>${label}:</b><span>${f[key]}</span></div>`)
-      .join('');
-    return `
-      <div class="form-card">
-        <div class="form-card-header">
-          <span class="form-card-name">${f.nombre || '(sin nombre)'}</span>
-          <span class="form-card-date">${fecha}</span>
-        </div>
-        <div class="form-fields">${fields}</div>
-      </div>
-    `;
-  }).join('');
-}
-
-async function loadStudents(){
-  const listEl = document.getElementById('student-list');
-  const { data, error } = await sb.from('students').select('*').order('full_name');
-  if(error){ listEl.innerHTML = '<div class="msg error">Error cargando alumnos.</div>'; return; }
-  studentsCache = data || [];
-  if(studentsCache.length === 0){ listEl.innerHTML = '<div class="msg">Todavía no hay alumnos.</div>'; return; }
-  listEl.innerHTML = studentsCache.map(s => `
-    <div class="student-row" data-id="${s.user_id}">
-      <div>
-        <div class="student-name">${s.full_name}</div>
-        <div class="student-meta">@${s.username} · ${lastLoginText(s.last_login_at)}</div>
-      </div>
-      <span class="badge ${s.payment_status}">${s.payment_status === 'al_dia' ? 'Al día' : 'Pendiente'}</span>
-    </div>
-  `).join('');
-  listEl.querySelectorAll('.student-row').forEach(row => {
-    row.addEventListener('click', () => openStudent(row.dataset.id));
+function sendPlanToFrame(){
+  const frame = document.getElementById('plan-frame');
+  if(!planPayload || !frame.contentWindow) return;
+  frame.contentWindow.postMessage({ type: 'cuatrouno:plan', ...planPayload }, location.origin);
+  sb.auth.getSession().then(({ data: { session } }) => {
+    if(session) frame.contentWindow.postMessage({
+      type: 'cuatrouno:session', access_token: session.access_token, refresh_token: session.refresh_token
+    }, location.origin);
   });
 }
 
-function lastLoginText(ts){
-  if(!ts) return 'nunca ingresó';
-  const d = new Date(ts);
-  return 'último ingreso ' + d.toLocaleDateString('es-AR') + ' ' + d.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
-}
-
-async function openStudent(userId){
-  currentStudentId = userId;
-  const s = studentsCache.find(x => x.user_id === userId);
-  if(!s) return;
-  document.getElementById('list-view').classList.add('hidden');
-  document.getElementById('detail-panel').classList.add('active');
-  document.getElementById('detail-name').textContent = s.full_name;
-  document.getElementById('detail-meta').textContent = '@' + s.username + ' · ' + lastLoginText(s.last_login_at);
-  const badge = document.getElementById('detail-badge');
-  badge.textContent = s.payment_status === 'al_dia' ? 'Al día' : 'Pendiente';
-  badge.className = 'badge ' + s.payment_status;
-  document.getElementById('detail-status').value = s.payment_status;
-  document.getElementById('detail-note').value = s.payment_note || '';
-  document.getElementById('detail-fullname').value = s.full_name || '';
-  document.getElementById('detail-username').value = s.username || '';
-  document.getElementById('detail-password').value = '';
-  document.getElementById('access-msg').textContent = '';
-  document.getElementById('status-msg').textContent = '';
-  document.getElementById('plan-msg').textContent = '';
-  document.getElementById('photo-msg').textContent = '';
-  renderPhotoPreview(s.photo_url);
-
-  const { data: planRow } = await sb.from('student_plans').select('html').eq('user_id', userId).maybeSingle();
-  document.getElementById('detail-plan-html').value = planRow?.html || '';
-
-  const progEl = document.getElementById('detail-progress');
-  progEl.innerHTML = '<div class="msg">Cargando...</div>';
-  const { data: logs } = await sb.from('exercise_logs').select('date,exercise,set1_weight,set2_weight,set3_weight').eq('athlete', s.slug).order('date', {ascending:false}).limit(20);
-  if(!logs || logs.length === 0){ progEl.innerHTML = '<div class="msg">Sin registros de progreso todavía.</div>'; }
-  else {
-    progEl.innerHTML = logs.map(l => {
-      const vals = [l.set1_weight, l.set2_weight, l.set3_weight].filter(v => v !== null && v !== undefined);
-      const d = new Date(l.date + 'T00:00:00');
-      return `<div class="progress-row"><span class="pdate">${d.toLocaleDateString('es-AR')}</span><span class="pex">${l.exercise}</span><span class="pval">${vals.join(' / ')}</span></div>`;
-    }).join('');
+// Cuando el admin guarda, el alumno ve el cambio sin recargar (Realtime),
+// y al volver a abrir la app se revisa si hay una versión nueva (por si el celular cortó la conexión).
+function watchPlan(userId, row){
+  const mode = row.data ? 'data' : 'html';
+  if(planWatch && planWatch.userId === userId){
+    planWatch.updatedAt = row.updated_at; planWatch.mode = mode;
+    return;
   }
+  if(planWatch?.channel) sb.removeChannel(planWatch.channel);
+  planWatch = { userId, updatedAt: row.updated_at, mode, channel: null };
+  planWatch.channel = sb.channel('plan-' + userId)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'student_plans', filter: 'user_id=eq.' + userId },
+      (payload) => applyPlanUpdate(payload.new))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'payments', filter: 'user_id=eq.' + userId },
+      () => refreshPayments())
+    .subscribe();
 }
 
-function renderPhotoPreview(photoUrl){
-  const el = document.getElementById('detail-photo-preview');
-  if(photoUrl){
-    el.innerHTML = `
-      <img src="${photoUrl}" alt="Foto" style="width:64px;height:64px;border-radius:50%;object-fit:cover;display:block;margin-bottom:8px;border:1px solid var(--border)">
-      <input type="text" readonly value="${photoUrl}" onclick="this.select()" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--soft);border-radius:6px;padding:6px 8px;font-size:11px;font-family:ui-monospace,monospace">
-    `;
+async function applyPlanUpdate(row){
+  if(!planWatch || !row || planScreen.classList.contains('hidden')) return;
+  if(row.updated_at && row.updated_at === planWatch.updatedAt) return;
+  const mode = row.data ? 'data' : 'html';
+  if(mode === 'data' && planWatch.mode === 'data' && planPayload){
+    planWatch.updatedAt = row.updated_at;
+    planPayload.plan = row.data;
+    sendPlanToFrame();
   } else {
-    el.innerHTML = '<div class="msg">Sin foto todavía.</div>';
+    // Cambió el modo (HTML <-> editable) o es un plan HTML: se vuelve a armar la pantalla.
+    await enterStudentFlow();
   }
 }
 
-document.getElementById('detail-photo-file').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if(!file || !currentStudentId) return;
-  const s = studentsCache.find(x => x.user_id === currentStudentId);
-  const msg = document.getElementById('photo-msg');
-  msg.textContent = 'Subiendo...'; msg.className = 'msg';
-  const photoUrl = await uploadStudentPhoto(currentStudentId, s.slug, file);
-  if(!photoUrl){
-    msg.textContent = 'Error al subir la foto.'; msg.className = 'msg error';
-    return;
+document.addEventListener('visibilitychange', async () => {
+  if(document.visibilityState !== 'visible' || !planWatch || planScreen.classList.contains('hidden')) return;
+  const { data: row } = await sb.from('student_plans').select('html,data,updated_at').eq('user_id', planWatch.userId).maybeSingle();
+  if(row) applyPlanUpdate(row);
+  refreshPayments();
+});
+
+// La sesión se refresca en la app principal; la plantilla recibe el token nuevo.
+sb.auth.onAuthStateChange((event) => {
+  if(event === 'TOKEN_REFRESHED' && planPayload) sendPlanToFrame();
+});
+
+window.addEventListener('message', (e) => {
+  if(e.origin !== location.origin) return;
+  const d = e.data || {};
+  if(d.type === 'cuatrouno:plan-ready'){
+    if(e.source === document.getElementById('plan-frame').contentWindow) sendPlanToFrame();
   }
-  const { error } = await sb.from('students').update({ photo_url: photoUrl }).eq('user_id', currentStudentId);
-  if(error){ msg.textContent = 'Foto subida, pero no se pudo guardar en la ficha.'; msg.className = 'msg error'; return; }
-  s.photo_url = photoUrl;
-  renderPhotoPreview(photoUrl);
-  msg.textContent = '✓ Foto actualizada'; msg.className = 'msg ok';
-  setTimeout(() => { msg.textContent=''; msg.className='msg'; }, 3000);
-});
-
-document.getElementById('back-to-list').addEventListener('click', () => {
-  document.getElementById('detail-panel').classList.remove('active');
-  document.getElementById('list-view').classList.remove('hidden');
-  currentStudentId = null;
-});
-
-document.getElementById('save-access-btn').addEventListener('click', async () => {
-  if(!currentStudentId) return;
-  const s = studentsCache.find(x => x.user_id === currentStudentId);
-  const btn = document.getElementById('save-access-btn');
-  const msg = document.getElementById('access-msg');
-  const full_name = document.getElementById('detail-fullname').value.trim();
-  const username = document.getElementById('detail-username').value.trim().toLowerCase();
-  const password = document.getElementById('detail-password').value;
-
-  const body = { user_id: currentStudentId };
-  if(full_name && full_name !== s.full_name) body.full_name = full_name;
-  if(username && username !== s.username) body.username = username;
-  if(password) body.password = password;
-
-  msg.className = 'msg error';
-  if(body.username && !/^[a-z0-9-]+$/.test(body.username)){ msg.textContent = 'Usuario inválido: solo minúsculas, números y guiones.'; return; }
-  if(body.password && body.password.length < 8){ msg.textContent = 'La contraseña debe tener al menos 8 caracteres.'; return; }
-  if(Object.keys(body).length === 1){ msg.textContent = 'No hay cambios para guardar.'; msg.className = 'msg'; return; }
-
-  btn.disabled = true; btn.textContent = 'Guardando...'; msg.textContent = '';
-  const { data, error } = await sb.functions.invoke('update-student', { body });
-  btn.disabled = false; btn.textContent = 'Guardar datos de acceso';
-  if(error || data?.error){
-    let detail = data?.error;
-    if(!detail && error?.context?.json){ try{ detail = (await error.context.json()).error; }catch(e){} }
-    msg.textContent = detail || error?.message || 'Error al guardar.';
-    msg.className = 'msg error';
-    return;
-  }
-
-  if(body.full_name) s.full_name = body.full_name;
-  if(body.username) s.username = body.username;
-  document.getElementById('detail-name').textContent = s.full_name;
-  document.getElementById('detail-meta').textContent = '@' + s.username + ' · ' + lastLoginText(s.last_login_at);
-  document.getElementById('detail-password').value = '';
-  const changed = [body.full_name && 'nombre', body.username && 'usuario', body.password && 'contraseña'].filter(Boolean);
-  msg.textContent = '✓ Actualizado: ' + changed.join(', ');
-  msg.className = 'msg ok';
-  loadStudents();
-});
-
-document.getElementById('save-status-btn').addEventListener('click', async () => {
-  if(!currentStudentId) return;
-  const btn = document.getElementById('save-status-btn');
-  const msg = document.getElementById('status-msg');
-  btn.disabled = true;
-  const payment_status = document.getElementById('detail-status').value;
-  const payment_note = document.getElementById('detail-note').value.trim() || null;
-  const { error } = await sb.from('students').update({ payment_status, payment_note }).eq('user_id', currentStudentId);
-  btn.disabled = false;
-  if(error){ msg.textContent = 'Error al guardar.'; msg.className = 'msg error'; return; }
-  msg.textContent = '✓ Guardado'; msg.className = 'msg ok';
-  const badge = document.getElementById('detail-badge');
-  badge.textContent = payment_status === 'al_dia' ? 'Al día' : 'Pendiente';
-  badge.className = 'badge ' + payment_status;
-  loadStudents();
-  setTimeout(() => { msg.textContent=''; msg.className='msg'; }, 3000);
-});
-
-document.getElementById('detail-plan-file').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    document.getElementById('detail-plan-html').value = reader.result;
-    const msg = document.getElementById('plan-msg');
-    msg.textContent = 'Archivo cargado (' + file.name + '). Revisá y hacé clic en "Guardar plan".';
-    msg.className = 'msg ok';
-  };
-  reader.readAsText(file);
-});
-
-document.getElementById('save-plan-btn').addEventListener('click', async () => {
-  if(!currentStudentId) return;
-  const btn = document.getElementById('save-plan-btn');
-  const msg = document.getElementById('plan-msg');
-  btn.disabled = true;
-  const html = document.getElementById('detail-plan-html').value;
-  const { error } = await sb.from('student_plans').upsert({ user_id: currentStudentId, html, updated_at: new Date().toISOString() });
-  btn.disabled = false;
-  if(error){ msg.textContent = 'Error al guardar el plan.'; msg.className = 'msg error'; return; }
-  msg.textContent = '✓ Plan guardado'; msg.className = 'msg ok';
-  setTimeout(() => { msg.textContent=''; msg.className='msg'; }, 3000);
+  if(d.type === 'cuatrouno:logout' && e.source === document.getElementById('plan-frame').contentWindow) logout();
 });
 
 init();
