@@ -420,9 +420,17 @@ loginForm.addEventListener('submit', async (e) => {
   await routeAfterLogin();
 });
 
+// Cierra la sesión en este dispositivo y borra cualquier copia guardada (local y de pestaña),
+// aunque falle la red: si quedara una copia, al volver a entrar se reabriría la sesión anterior.
 async function logout(){
-  await sb.auth.signOut();
-  location.reload();
+  try{ await sb.auth.signOut({ scope: 'local' }); }catch(e){}
+  clearStoredSessions();
+  location.replace('/');
+}
+function clearStoredSessions(){
+  [window.localStorage, window.sessionStorage].forEach(st => {
+    try{ Object.keys(st).filter(k => k.startsWith('sb-')).forEach(k => st.removeItem(k)); }catch(e){}
+  });
 }
 document.getElementById('logout-blocked-btn').addEventListener('click', logout);
 document.getElementById('refresh-blocked-btn').addEventListener('click', async () => {

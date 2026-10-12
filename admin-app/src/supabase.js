@@ -6,9 +6,30 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 export const EMAIL_DOMAIN = '@cuatrouno.club';
 export const WA_NUMBER = '5493484381444';
 
+// La app del alumno (/) guarda la sesión en localStorage o sessionStorage según "Mantener la sesión".
+// El panel lee de cualquiera de los dos, así comparten la misma sesión y no quedan copias sueltas.
+const sharedStorage = {
+  getItem: (k) => window.localStorage.getItem(k) ?? window.sessionStorage.getItem(k),
+  setItem: (k, v) => {
+    if (window.sessionStorage.getItem(k) !== null && window.localStorage.getItem(k) === null) window.sessionStorage.setItem(k, v);
+    else window.localStorage.setItem(k, v);
+  },
+  removeItem: (k) => { window.localStorage.removeItem(k); window.sessionStorage.removeItem(k); },
+};
+
 export const sb = import.meta.env.VITE_DEMO
   ? window.__demoClient
-  : createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+  : createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storage: sharedStorage, persistSession: true, autoRefreshToken: true } });
+
+// Salir: cierra la sesión en este dispositivo, borra todas las copias guardadas (aunque falle la red)
+// y vuelve al login de la app, desde donde se puede entrar con otra cuenta.
+export async function logout() {
+  try { await sb.auth.signOut({ scope: 'local' }); } catch (e) { /* se borra igual abajo */ }
+  [window.localStorage, window.sessionStorage].forEach((st) => {
+    try { Object.keys(st).filter((k) => k.startsWith('sb-')).forEach((k) => st.removeItem(k)); } catch (e) { /* storage bloqueado */ }
+  });
+  window.location.replace('/');
+}
 
 // Avisa al panel que algo cambió para recargar los datos (además de Realtime, por si no está activo).
 export const notifyChanged = () => window.dispatchEvent(new Event('cuatrouno:changed'));

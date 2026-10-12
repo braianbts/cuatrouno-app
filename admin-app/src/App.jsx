@@ -13,7 +13,7 @@ import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import PersonAddAlt1RoundedIcon from '@mui/icons-material/PersonAddAlt1Rounded';
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
-import { sb } from './supabase';
+import { sb, logout as doLogout } from './supabase';
 import { DataProvider, useData } from './data';
 import { BRAND } from './theme';
 import Login from './Login';
@@ -79,7 +79,7 @@ function Shell({ session }) {
   }), [section, search]);
 
   const current = SECTIONS.find((s) => s.key === section);
-  const logout = () => sb.auth.signOut();
+  const logout = () => doLogout();
 
   return (
     <UIContext.Provider value={ui}>
