@@ -69,8 +69,8 @@ export function DataProvider({ children }) {
   const value = useMemo(() => ({
     students, payments, plans, forms, logs, loading, errors, reload: load,
     studentById: (id) => students.find((s) => s.user_id === id),
-    // Clave con la que el alumno guarda sus pesos (plan.athlete puede diferir del slug).
-    athleteOf: (s) => plans[s.user_id]?.athlete || s.slug,
+    // Clave con la que el alumno guarda sus pesos: siempre su slug (lo exige la regla de exercise_logs).
+    athleteOf: (s) => s.slug,
   }), [students, payments, plans, forms, logs, loading, errors, load]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

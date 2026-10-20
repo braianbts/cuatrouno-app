@@ -1227,7 +1227,8 @@ document.getElementById('close-cam').addEventListener('click', () => {
 });
 
 // ---------- progreso (exercise_logs) ----------
-function athlete(){ return PLAN.athlete || STUDENT.slug; }
+// Supabase solo deja guardar pesos con el slug del alumno (regla de seguridad de exercise_logs).
+function athlete(){ return STUDENT.slug || PLAN.athlete; }
 function fmtDate(d){
   const dt = new Date(d + 'T00:00:00');
   return dt.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
@@ -1267,7 +1268,7 @@ async function saveLog(btn){
   }]);
   btn.disabled = false;
   btn.textContent = prevText;
-  if(error){ msgEl.textContent = 'Error al guardar, probá de nuevo.'; msgEl.classList.remove('ok'); return; }
+  if(error){ console.error('exercise_logs insert', error); msgEl.textContent = 'Error al guardar, probá de nuevo.'; msgEl.classList.remove('ok'); return; }
   msgEl.textContent = '✓ Guardado';
   msgEl.classList.add('ok');
   inputs.forEach(i => i.value = '');

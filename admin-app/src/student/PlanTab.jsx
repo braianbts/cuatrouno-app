@@ -94,6 +94,7 @@ export default function PlanTab({ student, onDirty }) {
     try {
       const imp = await loadImporter();
       const { plan, warnings: w } = imp.htmlToPlan(row.html, await loadBaseCss());
+      plan.athlete = student.slug;   // los pesos se guardan con el slug del alumno (lo exige Supabase)
       updateDraft(plan);
       setWarnings([...new Set(w)]);
       ui.notify('Convertido. Revisá la vista previa y guardá.', 'info');
