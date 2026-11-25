@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cuatrouno-v3';
+const CACHE_NAME = 'cuatrouno-v4';
 const CORE_ASSETS = [
   '/',
   '/manifest.json',
