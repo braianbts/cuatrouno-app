@@ -1,9 +1,9 @@
-const CACHE_NAME = 'cuatrouno-v2';
+const CACHE_NAME = 'cuatrouno-v3';
 const CORE_ASSETS = [
   '/',
   '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/icons/icon-192.png?v=2',
+  '/icons/icon-512.png?v=2'
 ];
 
 self.addEventListener('install', (event) => {
